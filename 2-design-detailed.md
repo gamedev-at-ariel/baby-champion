@@ -1,12 +1,14 @@
-# Baby Champion - Game Design - Detailed (v0.3.1)
+# Baby Champion - Game Design - Detailed (v0.4)
 
 All numbers in this document are **initial tuning values for playtesting**, not final balance.
+
+Sections 1-21 describe the base game. Sections 22-23 describe **later-stage features** (the AI partner and two-player mode), which will be implemented after the base game.
 
 ---
 
 ## 1. Revision history
 
-See [GameDesignRevisionHistory.md](GameDesignRevisionHistory.md).
+See GameDesignRevisionHistory.md.
 
 ---
 
@@ -23,9 +25,9 @@ See [GameDesignRevisionHistory.md](GameDesignRevisionHistory.md).
 
 ## 3. Players
 
-- **Single player** controls one parent. At setup the player chooses to play **with a partner** (an AI-controlled co-parent, Section 9) or **on my own** (single parent).
+- **Single player** controls one parent who raises the baby, with occasional help from grandparents (*Call for help*).
 - **Target audience:** young adults expecting their first baby. The game should leave them better prepared *and* looking forward to it. Secondary audience: new parents who will recognize (and laugh at) the situations.
-- **Future extension:** two human players cooperating (Section 21).
+- **Later stage:** an AI-controlled partner (Section 22) and two human players cooperating (Section 23).
 
 ---
 
@@ -34,7 +36,7 @@ See [GameDesignRevisionHistory.md](GameDesignRevisionHistory.md).
 1. **Hard, then heart.** Every challenge is paired with a reward beat. After the night shift comes the baby falling asleep on your chest; after the tantrum comes the spontaneous hug. The player should finish most levels smiling.
 2. **Firsts are events.** First smile, first laugh, first steps, first word are celebrated with music, a photo and a Milestone card - never buried in a menu.
 3. **Chaos is comedy.** Mischief (flying food, stolen mouse, splash attacks) is slapstick: the baby giggles, the parent reacts with humor, nothing is ever really ruined.
-4. **Real enough to prepare.** Needs, rates and safety practices are accurate (Section 17), so the joy rests on a true picture of parenting.
+4. **Real enough to prepare.** Needs, rates and safety practices are accurate (Section 16), so the joy rests on a true picture of parenting.
 5. **Short and kind.** Short levels, gentle failure, easy retries.
 
 ---
@@ -45,7 +47,7 @@ See [GameDesignRevisionHistory.md](GameDesignRevisionHistory.md).
 Raise the baby from birth to the first day of kindergarten (age 3). **36 levels**; level *N* represents the baby's *N*-th month.
 
 ### 5.2 Level objectives
-Each level has a **primary objective** tied to that age (Section 15), the general care constraints (Section 14.2), and a signature **Golden Moment** to catch.
+Each level has a **primary objective** tied to that age (Section 14), the general care constraints (Section 13.2), and a signature **Golden Moment** to catch.
 
 ### 5.3 Collection objective
 Fill the **Memory Album** with the baby's Golden Moments (Section 8.4). The finale plays a montage of the player's own album.
@@ -105,7 +107,7 @@ Feeds, diaper changes and meals consume supplies. If one is out, the action is u
 | 12-24 mo | 3 meals + 2 snacks | ~4 h | 4-6 h, one nap | 4-6 |
 | 24-36 mo | 3 meals + 2 snacks | ~4 h | 5-6 h, one nap | potty training |
 
-To be verified by the consultant (Section 17).
+To be verified by the consultant (Section 16).
 
 ---
 
@@ -113,13 +115,13 @@ To be verified by the consultant (Section 17).
 
 ### 8.1 Joy meter
 - A household meter, 0-100, shown as a warm glow around the parent portrait.
-- **Rises** with Golden Moments, play mini-games, the baby laughing, cuddles, couple moments with the partner, and completing hard tasks (small "you did it!" boost).
+- **Rises** with Golden Moments, play mini-games, the baby laughing, cuddles, and completing hard tasks (small "you did it!" boost).
 - **Decays slowly** through the day. Joy never causes failure.
 - **Effects:** at Joy 60+, Energy drains 25% slower and Stress falls 50% faster. This models a real feeling - a laughing baby makes tiredness easier to bear - and gives the player a positive strategy: *playing with the baby is not a distraction from survival, it helps you survive.*
 
 ### 8.2 Golden Moments
-- Each level has **one signature Golden Moment** (scripted, listed in Section 15) and **1-3 random ones** from an age-appropriate pool (grabs your finger, laughs at the cat, falls asleep holding a toy, dances to music, says your name...).
-- When a Golden Moment starts: sparkle on the baby, soft chime, edge-of-screen indicator if off-screen. If the partner is nearby, they call: "Come quick, look!"
+- Each level has **one signature Golden Moment** (scripted, listed in Section 14) and **1-3 random ones** from an age-appropriate pool (grabs your finger, laughs at the cat, falls asleep holding a toy, dances to music, says your name...).
+- When a Golden Moment starts: sparkle on the baby, soft chime, edge-of-screen indicator if off-screen.
 - The player has a window (~30 in-game minutes, ~15 real seconds) to tap **Enjoy**. The camera eases in, parent and baby share the moment, and a photo is saved to the Album. Big Joy boost.
 - Missing one is never a failure: "You missed that one - there will be many more."
 - Golden Moments can happen in the middle of chaos; choosing to stop and enjoy is a real, rewarded decision.
@@ -154,64 +156,9 @@ Failure screens stay warm and funny ("Grandma arrived and took over the night sh
 
 ---
 
-## 9. Partner NPC
+## 9. Procedures (player actions)
 
-### 9.1 Purpose
-- Makes parenting feel like the team effort it often is, and teaches real cooperation (shift sleeping, sharing tasks, looking after each other).
-- Adds warmth and humor (shared Golden Moments, banter, quirks).
-- Must **help, not play the game for you**: the player always remains the main caregiver in the level.
-
-### 9.2 Setup
-- At game start: "Raising the baby: **with a partner** / **on my own**".
-- The player names the partner and picks their appearance.
-- The partner gets **one strength and one quirk**, chosen by the player or rolled at random:
-
-| Strengths | Quirks |
-|---|---|
-| **Lullaby Star** - soothes Tension twice as fast. | **Riles them up** - plays wild games right before bedtime (raises baby Tension; very funny, slightly inconvenient). |
-| **Kitchen Hero** - cooks meals for both of you (feeds the parent). | **Forgetful shopper** - sometimes orders the wrong item (e.g. wrong diaper size). |
-| **Night Owl** - loses less Energy on night shifts. | **Deep sleeper** - does not wake up for the first cry. |
-| **Fun Parent** - earns extra Joy from play. | **Messy** - leaves dishes and toys around (raises Stress). |
-
-### 9.3 Availability
-- **Chapter 1 (levels 1-3):** home all day in level 1 (shared tutorial); from level 2, home in the evenings and nights.
-- **From level 4:** works outside the home on weekdays, about 08:00-18:00; home evenings, nights and weekend levels.
-- Some levels specify the partner's schedule (e.g. away on a business trip, or hosting the birthday party with you).
-- When the partner is out, they can still send a text message (a supportive line, a funny photo request: "Send me a picture of the baby!" - taking one gives Joy).
-
-### 9.4 Behavior (AI)
-- **Autonomous helping:** when idle, the partner picks a useful task by urgency (utility scoring): comfort a crying baby, change a diaper, wash dishes, cook. They never take the level's primary objective task (e.g. they won't do the spoon mini-game in *Spoon Swatter*).
-- **Requests:** tap the partner for a radial menu:
-  - *Take the baby* / *Feed the baby* / *Change the diaper*
-  - *Cook for us* / *Order supplies*
-  - *Your turn tonight* / *I'll take tonight* / *Let's alternate* (night plan)
-  - *Take a break* (sends the partner to rest)
-- **Responses:** accept ("On it!"), delay ("After I finish this"), or, when exhausted, decline with a swap offer ("I'm wiped - can you take this one and I'll do the next?"). Speech is shown as short bubbles with icons.
-- **Night plan:** at bedtime, a quick choice of who handles night wakings. Alternating keeps both Energy bars healthy - a real strategy many parents use.
-
-### 9.5 Partner state
-- Simplified **Energy** and **Stress**, shown as a mood face above their head.
-- Exhausted partner: slower, quirks appear more often, then goes to sleep and is unavailable until rested.
-- The partner never causes a level failure by themselves.
-
-### 9.6 Couple moments
-- **Sit together** (both on the sofa while the baby sleeps): both Stress falls, Joy rises.
-- **High five** after a hard task: small Joy boost.
-- **Shared Golden Moments:** if both parents tap Enjoy, the photo shows both, with a bigger Joy boost.
-- If both are exhausted, a short comedic bicker bubble appears; *Hug* resolves it.
-
-### 9.7 Balance
-- Levels are tuned for the **with-partner** mode; the partner should cover roughly 20-30% of the work.
-- **On my own** mode compensates: slower need rates (about -20%), larger crying budget, and one extra *Call for help* per level (a friendly neighbor or grandparent). The game treats single parents with respect, never as a "hard mode".
-
-### 9.8 Technical link to two-player mode
-The partner is driven through the same parent-controller interface as the player (human input or AI). The future two-player mode simply replaces the AI controller with a second human.
-
----
-
-## 10. Procedures (player actions)
-
-All actions are triggered by click / touch (Section 16).
+All actions are triggered by click / touch (Section 15).
 
 | Action | Where | Requires | Effect | In-game duration |
 |---|---|---|---|---|
@@ -235,31 +182,29 @@ All actions are triggered by click / touch (Section 16).
 | **Work** (month 6+) | Desk | Baby asleep or safely occupied | Earns money; drains Energy. | continuous |
 | **Order supplies** | Phone | Money | Delivery in 2 h (express 30 min, extra cost). | instant |
 | **Babyproof** (month 8+) | Hazard spots | Safety items | Installs covers, gates, locks, anchors. | 5 min each |
-| **Ask partner** | Near partner | Partner home | Requests from Section 9.4. | instant |
-| **Sit together / High five / Hug** | Near partner | Partner home | Section 9.6. | 2-15 min |
 | **Step away** | Room with crib | Baby in crib | Leave for 5 min; Stress falls sharply. Teaches a real coping strategy for overwhelming crying. | 5 min |
 | **Call for help** | Phone | Once per level | Grandparent helps for 2 h; caps the level at 2 stars. | 2 h |
 
-**Feeding choice:** breastfeeding, formula, or both, presented neutrally. With a partner, formula or expressed milk lets the partner do feeds too.
+**Feeding choice:** breastfeeding, formula, or both, presented neutrally.
 
 ---
 
-## 11. Resources
+## 10. Resources
 
 | Resource | Source | Used by |
 |---|---|---|
 | **Time** | - | Everything |
-| **Money** | Parental-leave allowance (months 1-5), Work (month 6+), partner's salary (fixed daily amount in partner mode) | Supplies, safety items, toys |
+| **Money** | Parental-leave allowance (months 1-5), Work (month 6+) | Supplies, safety items, toys |
 | **Diapers, wipes, formula, baby food, adult food** | Ordering | Care actions |
 | **Safety items** | Ordering | Babyproofing |
-| **Energy, Stress, Joy** | Parent meters | Section 7.2 and 8 |
+| **Energy, Stress, Joy** | Parent meters | Sections 7.2 and 8 |
 
 - Money and supplies carry over between levels; a retry restores start-of-level values.
 - Safety net: if the player cannot afford one day of essentials, grandparents send a gift (once per chapter).
 
 ---
 
-## 12. Conflicts
+## 11. Conflicts
 
 - **Time:** needs keep rising and pile up.
 - **The baby:** mischief once mobile - grabbing, throwing, hiding, splashing, sneaking items. Always comedic.
@@ -268,7 +213,7 @@ All actions are triggered by click / touch (Section 16).
 
 ---
 
-## 13. Boundaries
+## 12. Boundaries
 
 - **The house:** living room, kitchen, nursery, parents' bedroom, bathroom, home-office corner, entrance. Rooms unlock as they become relevant.
 - **Outside** (special levels): grocery store (23), playground (31), kindergarten (35-36).
@@ -276,37 +221,37 @@ All actions are triggered by click / touch (Section 16).
 
 ---
 
-## 14. Outcomes
+## 13. Outcomes
 
-### 14.1 Level structure
+### 13.1 Level structure
 Primary objective + general care constraints + time limit (end of day, or a real-time limit for scene levels).
 
-### 14.2 Failure conditions
+### 13.2 Failure conditions
 - Parent Energy reaches 0.
 - Crying budget exceeded (e.g. 60 in-game min per day level), or continuous crying over 30 in-game min.
 - A level-specific failure (e.g. the mouse ends up in the toilet).
 - Time runs out before the objective is completed.
 
-### 14.3 Stars
+### 13.3 Stars
 - **1 star:** objective completed, no failure.
 - **2 stars:** also average baby Wellbeing 70+.
 - **3 stars:** also the level's signature Golden Moment caught and Joy 60+ at the end. *Call for help* caps the level at 2 stars.
 - Stars unlock cosmetics: outfits, nursery decorations, lullabies, album stickers.
 
-### 14.4 Retry
+### 13.4 Retry
 Restart from the level start with money and supplies restored.
 
 ---
 
-## 15. Level roadmap
+## 14. Level roadmap
 
-### 15.1 Overview
+### 14.1 Overview
 **M** = milestone level (new mechanic). **R** = routine level ("A Day Together": a full day mixing learned mechanics with random events). Ages of milestones vary between children; Milestone cards say so.
 
 | Lvl | Age | Title | Type | Primary objective | Signature Golden Moment |
 |---|---|---|---|---|---|
-| 1 | 0-1 mo | First Day Home | M | Tutorial with partner: feed, burp, change, sleep. Stay within the crying budget. | The baby grips your finger. |
-| 2 | 1-2 mo | Night Shift | M | Night feeds every 2-3 h; agree a night plan. Reach morning with Energy above 20. | Asleep on your chest at 3 AM. |
+| 1 | 0-1 mo | First Day Home | M | Tutorial: feed, burp, change, sleep. Stay within the crying budget. | The baby grips your finger. |
+| 2 | 1-2 mo | Night Shift | M | Night feeds every 2-3 h; sleep between feeds. Reach morning with Energy above 20. | Asleep on your chest at 3 AM. |
 | 3 | 2-3 mo | Witching Hour | M | Evening fussiness. Find the favorite soothing method; asleep by 21:00. | First social smile. |
 | 4 | 3-4 mo | First Laughs | M | Play mini-games: make the baby laugh 5 times; 15 min tummy time. | First real belly laugh. |
 | 5 | 4-5 mo | The Roller | M | Baby rolls: 6 diaper changes without breaking contact. | First roll over - on the play mat, toward you. |
@@ -326,10 +271,10 @@ Restart from the level start with money and supplies restored.
 | 19 | 18-19 mo | A Day Together III | R | Routine day. | First scribble for the fridge. |
 | 20 | 19-20 mo | Bath Time | M | Slippery, splashy toddler: finish the bath without leaving the tub area. | Bubble beard. |
 | 21 | 20-21 mo | Picky Eater | M | Get the toddler to try 3 new foods. | "Yum!" |
-| 22 | 21-22 mo | **Hide and Seek** | M | Bath time - but the toddler hides somewhere in the house. Find them and get them into the bath by 19:30. *(15.3)* | Terrible hiding: feet sticking out, giggling. |
-| 23 | 22-23 mo | **Cart Sneak** | M | Grocery store: the toddler sneaks items into the cart when you look away. Check out with exactly your list. *(15.3)* | The toddler waves at everyone in the store; strangers wave back. |
+| 22 | 21-22 mo | **Hide and Seek** | M | Bath time - but the toddler hides somewhere in the house. Find them and get them into the bath by 19:30. *(14.3)* | Terrible hiding: feet sticking out, giggling. |
+| 23 | 22-23 mo | **Cart Sneak** | M | Grocery store: the toddler sneaks items into the cart when you look away. Check out with exactly your list. *(14.3)* | The toddler waves at everyone in the store; strangers wave back. |
 | 24 | 23-24 mo | Chatterbox | M | Understand and answer the toddler's requests (icon speech bubbles). | First two-word sentence. |
-| 25 | 24-25 mo | **Splash Attack** | M | The toddler grabs the shower hose and sprays you. Dodge, get it back, finish the bath. *(15.3)* | Both of you soaked and laughing. |
+| 25 | 24-25 mo | **Splash Attack** | M | The toddler grabs the shower hose and sprays you. Dodge, get it back, finish the bath. *(14.3)* | Both of you soaked and laughing. |
 | 26 | 25-26 mo | Big Bed | M | Toddler bed and bedtime escapes: in bed and staying there by 21:00. | The toddler "reads" you a bedtime story. |
 | 27 | 26-27 mo | Potty Training I | M | Spot the signs; get to the potty in time. | First potty success - victory dance. |
 | 28 | 27-28 mo | Potty Training II | M | At most 2 accidents today. | "I did it myself!" announcement. |
@@ -344,10 +289,10 @@ Restart from the level start with money and supplies restored.
 
 **Chapters:** 1 Newborn (1-3), 2 Getting to Know You (4-6), 3 Solids & Squirms (7-9), 4 On the Move (10-13), 5 Toddler (14-24), 6 Big Kid (25-36).
 
-### 15.2 Routine levels
+### 14.2 Routine levels
 "A Day Together" levels mix every unlocked mechanic, draw 2-4 random events from an age pool (unexpected visitor, delivery mix-up, teething night, power cut, rainy day indoors), and always include a signature Golden Moment so they feel special, not filler.
 
-### 15.3 Detailed designs of the new levels
+### 14.3 Detailed designs of selected levels
 
 #### Level 22 - Hide and Seek (21-22 months, day level, evening segment)
 - **Setup:** after dinner it's bath time. When you say "Bath time!", the toddler giggles and runs off to hide.
@@ -381,29 +326,28 @@ Restart from the level start with money and supplies restored.
 
 ---
 
-## 16. Controls, camera and UI
+## 15. Controls, camera and UI
 
-### 16.1 Controls
-- **Click/tap floor:** walk. **Click/tap object, baby or partner:** radial action menu; unavailable actions greyed out with a reason.
+### 15.1 Controls
+- **Click/tap floor:** walk. **Click/tap object or baby:** radial action menu; unavailable actions greyed out with a reason.
 - **Mini-games:** drag, timing taps, hold.
 - Desktop shortcuts (optional): Space = pause, number keys = quick actions.
 
-### 16.2 Camera
+### 15.2 Camera
 3/4 top-down, following the parent, room-based framing. Zoom by scroll/pinch; rotate by right-drag/two-finger drag in 90° steps. Edge indicators for off-screen crying, Golden Moments and deliveries. During *Enjoy*, the camera eases in close.
 
-### 16.3 HUD
+### 15.3 HUD
 - Baby needs icons (hunger, diaper, sleep, tension, boredom) with shape-coded urgency.
 - Parent bars: Energy, Hunger, Stress; Joy as a glow around the parent portrait.
-- Partner mood face.
 - Clock, day, objective, crying budget, money, supplies, phone button.
 - Album button with a counter of moments caught this level.
 
-### 16.4 Menus and flow
-Title → baby and family setup (baby name, sex, appearance; partner or on my own; feeding choice) → level map by chapter → level → success screen (album photo, stars) → Milestone card. Album accessible from the level map. Settings: sound, crying volume, difficulty, accessibility.
+### 15.4 Menus and flow
+Title → baby setup (baby name, sex, appearance; feeding choice) → level map by chapter → level → success screen (album photo, stars) → Milestone card. Album accessible from the level map. Settings: sound, crying volume, difficulty, accessibility.
 
 ---
 
-## 17. Realism and safety guidelines
+## 16. Realism and safety guidelines
 
 - **Consultant** (pediatric nurse or pediatrician) reviews facts, rates and cards before release. Cards carry a short disclaimer: general information, not medical advice.
 - **Safe sleep:** baby on their back in a crib with no pillows, bumpers or loose blankets; no action allows otherwise.
@@ -417,7 +361,7 @@ Title → baby and family setup (baby name, sex, appearance; partner or on my ow
 
 ---
 
-## 18. Art, audio and tone
+## 17. Art, audio and tone
 
 - **Tone:** joyful and funny first, honest about the hard parts (pillar 1: hard, then heart).
 - **Art:** stylized low-poly 3-D, soft warm palette, expressive faces. Baby grows visibly every chapter; nursery evolves.
@@ -427,7 +371,7 @@ Title → baby and family setup (baby name, sex, appearance; partner or on my ow
 
 ---
 
-## 19. Business model
+## 18. Business model
 
 **Free to play. Ads will be added in a later version.**
 
@@ -444,19 +388,19 @@ Principles, so that ads never damage the warm experience:
 
 ---
 
-## 20. Technical notes
+## 19. Technical notes
 
-### 20.1 Engine and template
+### 19.1 Engine and template
 - **Unity 6.3 or later**, created from the **3D (URP)** template.
 - URP assets per quality tier: *Web*, *Android Low*, *Android High*. Forward rendering, baked lighting with a few real-time lights, minimal post-processing.
 
-### 20.2 Input
+### 19.2 Input
 - **New Input System only:** Player Settings → Active Input Handling = *Input System Package (New)*. No legacy `UnityEngine.Input` calls anywhere.
 - One Input Actions asset with pointer-based actions (Point, Click/Tap, Hold, Drag, Scroll/Zoom) so mouse and touch share one path; Enhanced Touch for pinch and two-finger rotate.
 - UI uses the *Input System UI Input Module*.
 - Desktop keyboard shortcuts are optional bindings, never required.
 
-### 20.3 Command-line (CLI) support
+### 19.3 Command-line (CLI) support
 Everything a developer or CI needs runs headless from the command line:
 - **Builds** through static editor methods, for example:
   - `Unity -batchmode -quit -projectPath . -executeMethod BabyChampion.Editor.BuildScript.BuildWeb -logFile -`
@@ -467,51 +411,136 @@ Everything a developer or CI needs runs headless from the command line:
 - **Balance simulator:** `-executeMethod BabyChampion.Editor.BalanceSim.Run -level 8 -runs 500` plays a level headlessly with a simple bot and reports failure rates, so tuning can be checked without playing by hand.
 - **Runtime arguments for development builds:** `-level 10 -timescale 4 -seed 123 -skipIntro` (on the Web build, the same as URL parameters, e.g. `?level=10`).
 
-### 20.4 Architecture
+### 19.4 Architecture
 - **Simulation core in plain C#** (no MonoBehaviour dependency): meters, rules, time, economy. This keeps it unit-testable in EditMode tests and fast enough for the CLI balance simulator.
-- **Data-driven content:** ScriptableObjects for levels, age rates, prices, Golden Moments and partner traits, with JSON export/import for tooling.
-- **Parent-controller interface** shared by the player, the partner AI, and a future second human player.
-- **Ad-service interface** with a no-op implementation (Section 19).
+- **Data-driven content:** ScriptableObjects for levels, age rates, prices and Golden Moments, with JSON export/import for tooling.
+- **Parent actions go through a controller interface**, so a later AI partner or second human player (Sections 22-23) can drive a parent without changes to the simulation.
+- **Ad-service interface** with a no-op implementation (Section 18).
 - Assembly definitions for Runtime, Editor and Tests.
 
-### 20.5 Platforms
+### 19.5 Platforms
 - **Web:** Unity Web platform build for itch.io. Use compression with *Decompression Fallback* enabled (itch.io does not serve the compression headers Unity's default setup expects), keep download size small, test early in mobile browsers.
 - **Android:** IL2CPP, ARM64, App Bundle (AAB) for Google Play; target API level per current Play requirements; landscape.
 
-### 20.6 Saving
+### 19.6 Saving
 Automatic save at the end of each level as JSON in `Application.persistentDataPath` (browser storage on Web - verify persistence on itch.io early). One save slot per baby, up to 3 babies. The Memory Album stores level and moment IDs, and photos are regenerated from them rather than stored as images, to keep saves small.
 
 ---
 
-## 21. Future extension: two players
+## 20. Open questions
 
-- Two parents cooperate - local network or online.
-- The second player takes the partner's role through the same parent-controller interface (Section 9.8); the partner's strength and quirk are dropped.
-- Shared Golden Moments with both players tapping Enjoy give the biggest Joy boosts.
-- Levels are retuned for two players (faster needs, more simultaneous events).
+1. Should the baby have a temperament that varies between playthroughs (easy vs. sensitive)?
+2. Final names, prices and currency.
+3. Which consultant reviews the content, and when?
+4. Localization: which languages, and when?
+5. Ad SDK choice and web ad strategy (when ads are added).
 
----
-
-## 22. Open questions
-
-1. Partner NPC: visual identity and voice; how often quirks trigger; whether the partner has a long-term relationship meter across levels.
-2. Should the baby have a temperament that varies between playthroughs (easy vs. sensitive)?
-3. Final names, prices and currency.
-4. Which consultant reviews the content, and when?
-5. Localization: which languages, and when?
-6. Ad SDK choice and web ad strategy (when ads are added).
+Open questions about the partner NPC are in Section 22.11.
 
 ---
 
-## 23. Development tasks
+## 21. Development tasks
 
 1. **Project setup:** Unity 6.3+ URP project, new Input System only, assembly definitions, CLI build and test scripts, CI.
 2. **Core simulation** in plain C# with EditMode tests: baby and parent meters, Joy, supplies, money, time.
-3. **Vertical slice:** Levels 1 (tutorial with partner), 2 (night shift), 4 (first laughs - Joy system), 8 (spoon swatter), 10 (mouse thief). Includes Golden Moments, Album, partner AI basics. Playtest with the target audience - measure whether players finish levels smiling.
+3. **Vertical slice:** Levels 1 (tutorial), 2 (night shift), 4 (first laughs - Joy system), 8 (spoon swatter), 10 (mouse thief). Includes Golden Moments and the Album. Playtest with the target audience - measure whether players finish levels smiling.
 4. **Controls, camera, HUD** on mouse and touch; test on a mid-range Android phone and in a mobile browser.
 5. **Balance simulator** and first tuning pass.
 6. **Content review** by the consultant.
 7. **Remaining levels**, chapter by chapter, including Hide and Seek, Cart Sneak and Splash Attack; then routine levels and the random-event pool.
 8. **Art and audio pass**; accessibility options.
 9. **Release** on itch.io (web) and Android; ad-service stub in place.
-10. **Later:** ads integration, two-player mode, more levels.
+10. **Later:** ads integration, partner NPC (Section 22), two-player mode (Section 23), more levels.
+
+---
+---
+
+# Later-stage features
+
+The features below are designed now but will be implemented **after the base game**. The base game (Sections 1-21) must not depend on them.
+
+---
+
+## 22. Partner NPC (later stage)
+
+### 22.1 Purpose
+- Makes parenting feel like the team effort it often is, and teaches real cooperation (shift sleeping, sharing tasks, looking after each other).
+- Adds warmth and humor (shared Golden Moments, banter, quirks).
+- Must **help, not play the game for you**: the player always remains the main caregiver in the level.
+
+### 22.2 Setup
+- At game start, a new choice: "Raising the baby: **with a partner** / **on my own**". *On my own* is the base game.
+- The player names the partner and picks their appearance.
+- The partner gets **one strength and one quirk**, chosen by the player or rolled at random:
+
+| Strengths | Quirks |
+|---|---|
+| **Lullaby Star** - soothes Tension twice as fast. | **Riles them up** - plays wild games right before bedtime (raises baby Tension; very funny, slightly inconvenient). |
+| **Kitchen Hero** - cooks meals for both of you (feeds the parent). | **Forgetful shopper** - sometimes orders the wrong item (e.g. wrong diaper size). |
+| **Night Owl** - loses less Energy on night shifts. | **Deep sleeper** - does not wake up for the first cry. |
+| **Fun Parent** - earns extra Joy from play. | **Messy** - leaves dishes and toys around (raises Stress). |
+
+### 22.3 Availability
+- **Level 1:** home all day; joins the tutorial (an extra step introducing requests).
+- **Levels 2-3:** home in the evenings and nights.
+- **From level 4:** works outside the home on weekdays, about 08:00-18:00; home evenings, nights and weekend levels.
+- Some levels specify the partner's schedule (e.g. away on a business trip, or hosting the birthday party with you in level 13).
+- When the partner is out, they can still send a text message (a supportive line, a funny photo request: "Send me a picture of the baby!" - taking one gives Joy).
+
+### 22.4 Behavior (AI)
+- **Autonomous helping:** when idle, the partner picks a useful task by urgency (utility scoring): comfort a crying baby, change a diaper, wash dishes, cook. They never take the level's primary objective task (e.g. they won't do the spoon mini-game in *Spoon Swatter*).
+- **Requests:** tap the partner for a radial menu:
+  - *Take the baby* / *Feed the baby* / *Change the diaper*
+  - *Cook for us* / *Order supplies*
+  - *Your turn tonight* / *I'll take tonight* / *Let's alternate* (night plan)
+  - *Take a break* (sends the partner to rest)
+- **Responses:** accept ("On it!"), delay ("After I finish this"), or, when exhausted, decline with a swap offer ("I'm wiped - can you take this one and I'll do the next?"). Speech is shown as short bubbles with icons.
+- **Night plan:** at bedtime, a quick choice of who handles night wakings. Alternating keeps both Energy bars healthy - a real strategy many parents use.
+
+### 22.5 Partner state
+- Simplified **Energy** and **Stress**, shown as a mood face above their head.
+- Exhausted partner: slower, quirks appear more often, then goes to sleep and is unavailable until rested.
+- The partner never causes a level failure by themselves.
+
+### 22.6 Couple moments
+- **Sit together** (both on the sofa while the baby sleeps): both Stress falls, Joy rises.
+- **High five** after a hard task: small Joy boost.
+- **Shared Golden Moments:** when a Golden Moment starts and the partner is nearby, they call "Come quick, look!". If both parents tap Enjoy, the photo shows both, with a bigger Joy boost.
+- If both are exhausted, a short comedic bicker bubble appears; *Hug* resolves it.
+
+### 22.7 Balance
+- The base game is tuned for one parent. In partner mode, the challenge must stay comparable: levels get faster need rates and more simultaneous events, so that the partner covers roughly 20-30% of the work while the player stays the main caregiver.
+- Both modes are presented as equal choices; neither is a "hard mode".
+
+### 22.8 Additional procedures
+
+| Action | Where | Requires | Effect | In-game duration |
+|---|---|---|---|---|
+| **Ask partner** | Near partner | Partner home | Requests from 22.4. | instant |
+| **Sit together / High five / Hug** | Near partner | Partner home | 22.6. | 2-15 min |
+
+### 22.9 Changes to the base game when the partner is added
+- **Setup screen:** *with a partner / on my own* choice; partner name, look, strength and quirk.
+- **Controls and HUD:** the partner can be tapped for the radial menu; partner mood face on the HUD.
+- **Feeding:** with formula or expressed milk, the partner can do feeds too.
+- **Money:** the partner's salary adds a fixed daily amount.
+- **Golden Moments:** the partner's "Come quick" call (22.6).
+- **Level 1:** extra tutorial step on requests. **Level 2:** objective adds "agree a night plan".
+- **Technical:** the partner AI drives a parent through the controller interface of Section 19.4.
+
+### 22.10 Technical link to two-player mode
+The partner is driven through the same parent-controller interface as the player (human input or AI). The two-player mode (Section 23) simply replaces the AI controller with a second human.
+
+### 22.11 Open questions
+1. Visual identity and voice of the partner.
+2. How often quirks trigger.
+3. Whether the partner has a long-term relationship meter across levels.
+
+---
+
+## 23. Two players (later stage)
+
+- Two parents cooperate - local network or online.
+- The second player takes the partner's role through the same parent-controller interface (Section 22.10); the partner's strength and quirk are dropped.
+- Shared Golden Moments with both players tapping Enjoy give the biggest Joy boosts.
+- Levels are retuned for two players (faster needs, more simultaneous events).

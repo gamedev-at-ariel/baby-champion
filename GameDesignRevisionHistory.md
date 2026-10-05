@@ -1,8 +1,18 @@
 # Baby Champion - Game Design - Revision History
 
-Revision history of GameDesignDetails.md. Section numbers refer to that document. v0.1 is the original draft, GameDesign.md.
+Revision history of 2-design-detailed.md. Section numbers in each entry refer to the document as it was in that version. v0.1 is the original draft, 1-design-raw.md.
+
+**File names:** the documents were renamed by reading order: GameDesign.md → 1-design-raw.md, GameDesignDetails.md → 2-design-detailed.md, PLAN.md → 3-plan.md. Entries below use the names that were current at the time.
 
 ---
+
+## v0.4
+- **Partner NPC moved to a later stage.** All partner content is now in Section 22 at the end of the document, under "Later-stage features", together with the two-player mode (Section 23).
+- The base game is a **single-parent game** with occasional grandparent help (*Call for help*). Removed partner references from players, Golden Moments, procedures, money, Level 1 (tutorial) and Level 2 (night plan), HUD and setup screen. They are listed in Section 22.9 as changes to make when the partner is added.
+- **Balance rule reversed:** the base game is tuned for one parent; partner mode will be retuned to stay comparably challenging (Section 22.7). Previously, levels were tuned for partner mode and single-parent mode was compensated.
+- The parent-controller interface stays in the base architecture (Section 19.4), so the partner and two-player mode can be added later without changing the simulation.
+- Partner open questions moved to Section 22.11.
+- Sections renumbered: old 10-20 are now 9-19; old 22-23 (open questions, development tasks) are now 20-21; the partner (old 9) is now 22; two players (old 21) is now 23.
 
 ## v0.3.1
 - Revision history moved from GameDesignDetails.md into this file. Section 1 of the design document now points here; all other section numbers are unchanged.
