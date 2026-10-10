@@ -6,6 +6,10 @@ Revision history of 2-design-detailed.md. Section numbers in each entry refer to
 
 ---
 
+## v0.4.1
+- **Builds use Unity 6 Build Profiles** with the built-in `-activeBuildProfile` and `-build` command-line arguments, replacing the planned custom build script (Section 19.3). Only a small pre-build hook remains, to stamp the version number.
+- Command-line calls go through a wrapper script, `tools/unity.sh`, which adds the common flags once. Exact commands moved to 3-plan.md, Section 2.
+
 ## v0.4
 - **Partner NPC moved to a later stage.** All partner content is now in Section 22 at the end of the document, under "Later-stage features", together with the two-player mode (Section 23).
 - The base game is a **single-parent game** with occasional grandparent help (*Call for help*). Removed partner references from players, Golden Moments, procedures, money, Level 1 (tutorial) and Level 2 (night plan), HUD and setup screen. They are listed in Section 22.9 as changes to make when the partner is added.

@@ -1,6 +1,6 @@
 # Baby Champion - Milestone Plan
 
-Based on 2-design-detailed.md v0.4. No code has been written yet; this plan describes the order of work, how each milestone is verified from the Unity command line, and what you should playtest.
+Based on 2-design-detailed.md v0.4.1. No code has been written yet; this plan describes the order of work, how each milestone is verified from the Unity command line, and what you should playtest.
 
 Milestones M0-M12 build and release the base game (a single-parent game). Milestones L1-L3 add the later-stage features: the partner NPC, two-player mode and ads.
 
@@ -18,20 +18,26 @@ Milestones M0-M12 build and release the base game (a single-parent game). Milest
 
 ## 2. CLI conventions (apply to every milestone)
 
-`$UNITY` is the path to the Unity 6.3+ editor executable. All commands run from the project root. A wrapper script (`tools/ci.sh`, plus `tools/ci.ps1` for Windows) runs the full set in order and stops on the first failure.
+All commands run from the project root through a small wrapper, **`tools/unity.sh`** (plus `tools/unity.ps1` for Windows). The wrapper finds the pinned Unity 6.3+ editor and adds the flags every call needs: `-batchmode`, `-projectPath .` and `-logFile -`. Unity's documentation doesn't define what happens without `-projectPath`, so the flag stays, but it is written once in the wrapper instead of in every command. A second script, `tools/ci.sh` (and `tools/ci.ps1`), runs the full set in order and stops on the first failure.
 
-| Purpose | Command (shape) | Pass condition |
+| Purpose | Command | Pass condition |
 |---|---|---|
-| EditMode tests | `$UNITY -batchmode -nographics -projectPath . -runTests -testPlatform EditMode -testResults artifacts/editmode.xml -logFile artifacts/editmode.log` | Exit code 0; no failed tests in the XML. |
-| PlayMode tests | `$UNITY -batchmode -projectPath . -runTests -testPlatform PlayMode -testResults artifacts/playmode.xml -logFile artifacts/playmode.log` | Exit code 0. |
-| Data validation | `$UNITY -batchmode -nographics -quit -projectPath . -executeMethod BabyChampion.Editor.DataValidator.Run -logFile -` | Exit code 0; report in `artifacts/validation.txt`. |
-| Balance simulator | `$UNITY -batchmode -nographics -quit -projectPath . -executeMethod BabyChampion.Editor.BalanceSim.Run -level <N> -bot <name> -runs <K> -seed <S> -logFile -` | Exit code 0; results in `artifacts/balance/*.csv`; targets in Section 5 met. |
-| Web build | `$UNITY -batchmode -quit -projectPath . -buildTarget WebGL -executeMethod BabyChampion.Editor.BuildScript.BuildWeb -out builds/web -logFile -` | Exit code 0; build size within budget. |
-| Android build | `$UNITY -batchmode -quit -projectPath . -buildTarget Android -executeMethod BabyChampion.Editor.BuildScript.BuildAndroid -out builds/android -logFile -` | Exit code 0; APK (dev) or AAB (release) produced. |
-| Screenshots | `$UNITY -batchmode -projectPath . -executeMethod BabyChampion.Editor.ScreenshotTool.Run -levels all -logFile -` | Images in `artifacts/screens/` for visual review (needs graphics, so no `-nographics`). |
+| EditMode tests | `tools/unity.sh -nographics -runTests -testPlatform EditMode -testResults artifacts/editmode.xml` | Exit code 0; no failed tests in the XML. |
+| PlayMode tests | `tools/unity.sh -runTests -testPlatform PlayMode -testResults artifacts/playmode.xml` | Exit code 0. |
+| Data validation | `tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run` | Exit code 0; report in `artifacts/validation.txt`. |
+| Balance simulator | `tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level <N> -bot <name> -runs <K> -seed <S>` | Exit code 0; results in `artifacts/balance/*.csv`; targets in Section 6 met. |
+| Web build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Web.asset" -build builds/web` | Exit code 0; build size within budget. |
+| Android build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Android.asset" -build builds/android/BabyChampion.apk` | Exit code 0; APK (dev profile) or AAB (release profile) produced. |
+| Screenshots | `tools/unity.sh -quit -executeMethod BabyChampion.Editor.ScreenshotTool.Run -levels all` | Images in `artifacts/screens/` for visual review (needs graphics, so no `-nographics`). |
+
+The test commands have no `-quit`: the test runner closes Unity itself, and `-quit` would make Unity exit before the tests run.
+
+**Builds use Unity 6 Build Profiles, not a custom build script.** A Build Profile is an asset that stores the platform and its build settings. Unity 6 builds one directly from the command line with `-activeBuildProfile` and `-build`, so no build code is needed. There are four profiles: *Web Dev*, *Web Release*, *Android Dev* and *Android Release*. The table shows one of each for short. The only build code is a small editor hook that runs before every build and stamps the version number. Build size is checked by `tools/ci.sh` after the build.
+
+**Who writes the scripts and tools:** I (Claude) write `tools/unity.sh`, `tools/ci.sh`, the Build Profiles and the version hook in M0. I write each editor tool (data validator, balance simulator, screenshot tool) in the milestone that first needs it. They are part of the code base like everything else, and you review them like any other change. Each milestone's CLI checks only count once I've actually run them and they pass.
 
 Rules:
-- Every executeMethod tool returns a **non-zero exit code on failure**, so CI and scripts can rely on it.
+- Every executeMethod tool returns a **non-zero exit code on failure**, so CI and scripts can rely on it. M0 also confirms that a failed `-build` returns non-zero.
 - The simulation uses a **seeded random generator**; tests and balance runs pass `-seed`, so every result is reproducible.
 - PlayMode tests drive input through the Input System test fixture (simulated pointer and touch), so interaction is tested without a human.
 - Development builds accept runtime arguments: `-level N -timescale X -seed S -skipIntro`. On Web they are URL parameters (`?level=N&timescale=X`); on Android they are passed when launching the app through `adb` (exact command documented in M0).
@@ -47,7 +53,8 @@ Rules:
 - Unity 6.3+ project from the 3D (URP) template; URP quality tiers *Web*, *Android Low*, *Android High*.
 - Active Input Handling = Input System Package (New) only; empty Input Actions asset with pointer actions.
 - Folder layout and assembly definitions: `Runtime/Simulation` (no UnityEngine dependency), `Runtime/Game`, `Editor`, `Tests/EditMode`, `Tests/PlayMode`.
-- Build script, data validator stub, test runner setup, `tools/ci.sh`.
+- `tools/unity.sh` and `tools/ci.sh` (plus Windows versions); Build Profiles (*Web Dev*, *Web Release*, *Android Dev*, *Android Release*) and the version-stamping hook; data validator stub; test runner setup.
+- Document how to run Unity from the CLI on your machine: where the pinned editor is installed, and how to activate the Unity license for batch mode.
 - Optional: CI service running `tools/ci.sh` on every push.
 - A test scene: a floor plane and a cube that moves to where you click or tap.
 
@@ -201,7 +208,7 @@ Rules:
 ### M7 - Chapters 1-3 complete (Levels 1-9)
 **Scope:** Levels 3, 5 (The Roller: hand-on-baby changing), 6 (Back to Work with money target), 7 (First Spoon), 9 (Crawler: babyproofing). Remaining play mini-games for these ages. Chapter structure on the level map.
 
-**CLI verification:** data validation for all new levels; PlayMode bot run for each level; balance targets per level (Section 5); a test that every level has a signature Golden Moment and Milestone card.
+**CLI verification:** data validation for all new levels; PlayMode bot run for each level; balance targets per level (Section 6); a test that every level has a signature Golden Moment and Milestone card.
 
 **Playtest:** play Chapters 1-3 in order. Check the difficulty curve and whether each level introduces something new and memorable.
 
@@ -307,7 +314,7 @@ These start after the base game is released. L2 depends on L1; L3 is independent
 **CLI verification**
 - EditMode tests with two scripted controllers on one simulation: both players' actions apply correctly; conflicting actions (both picking up the baby) resolve consistently.
 - Multi-instance test: CLI launches two development builds (`-host`, `-join`) each driven by a bot; the simulation state hash matches on both every N ticks; killing one instance hands its parent to the partner AI.
-- Balance simulator with two bots: targets as in Section 5.
+- Balance simulator with two bots: targets as in Section 6.
 
 **Playtest**
 - Play Chapter 1 with someone on two devices, on the same network and over the internet.

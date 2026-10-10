@@ -1,4 +1,4 @@
-# Baby Champion - Game Design - Detailed (v0.4)
+# Baby Champion - Game Design - Detailed (v0.4.1)
 
 All numbers in this document are **initial tuning values for playtesting**, not final balance.
 
@@ -401,12 +401,9 @@ Principles, so that ads never damage the warm experience:
 - Desktop keyboard shortcuts are optional bindings, never required.
 
 ### 19.3 Command-line (CLI) support
-Everything a developer or CI needs runs headless from the command line:
-- **Builds** through static editor methods, for example:
-  - `Unity -batchmode -quit -projectPath . -executeMethod BabyChampion.Editor.BuildScript.BuildWeb -logFile -`
-  - `Unity -batchmode -quit -projectPath . -executeMethod BabyChampion.Editor.BuildScript.BuildAndroid -logFile -`
-  - Build methods read options (output path, development build, version) from command-line arguments and return a non-zero exit code on failure.
-- **Tests:** `Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults results.xml` (and `PlayMode`).
+Everything a developer or CI needs runs headless from the command line. All calls go through a wrapper script, `tools/unity.sh`, which adds the common flags (`-batchmode`, `-projectPath .`, `-logFile -`); exact commands are in 3-plan.md, Section 2.
+- **Builds** use Unity 6 **Build Profiles** (*Web Dev*, *Web Release*, *Android Dev*, *Android Release*), built directly with `-activeBuildProfile <profile> -build <output path>`. No custom build script is needed. A small pre-build editor hook stamps the version number.
+- **Tests:** `-runTests -testPlatform EditMode` (and `PlayMode`), writing an XML report.
 - **Data validation:** `-executeMethod BabyChampion.Editor.DataValidator.Run` checks all level and tuning data.
 - **Balance simulator:** `-executeMethod BabyChampion.Editor.BalanceSim.Run -level 8 -runs 500` plays a level headlessly with a simple bot and reports failure rates, so tuning can be checked without playing by hand.
 - **Runtime arguments for development builds:** `-level 10 -timescale 4 -seed 123 -skipIntro` (on the Web build, the same as URL parameters, e.g. `?level=10`).
