@@ -2,8 +2,10 @@
 # Full command-line check, in order, stopping at the first failure:
 #   EditMode tests -> PlayMode tests -> data validation -> Web build -> Android build -> build sizes
 #
-# Usage: tools/ci.sh [--release] [--skip-builds] [--verify-build-failure]
-#   --release               build the Web Release and Android Release (AAB) profiles instead of Dev
+# Usage: tools/ci.sh [--release] [--web-dev] [--skip-builds] [--verify-build-failure]
+#   (default)               build Web Release (the one for itch.io) and Android Dev (APK)
+#   --release               build Android Release (AAB) instead of Android Dev
+#   --web-dev               build Web Dev (uncompressed, for local debugging) instead of Web Release
 #   --skip-builds           tests and validation only
 #   --verify-build-failure  only check that a deliberately failed build returns a non-zero exit code
 #
@@ -16,10 +18,11 @@ cd "$ROOT"
 UNITY="tools/unity.sh"
 PROFILES="Assets/Settings/Build Profiles"
 
-RELEASE=0; SKIP_BUILDS=0; VERIFY_FAILURE=0
+RELEASE=0; WEB_DEV=0; SKIP_BUILDS=0; VERIFY_FAILURE=0
 for arg in "$@"; do
   case "$arg" in
     --release) RELEASE=1 ;;
+    --web-dev) WEB_DEV=1 ;;
     --skip-builds) SKIP_BUILDS=1 ;;
     --verify-build-failure) VERIFY_FAILURE=1 ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
@@ -89,10 +92,12 @@ cat artifacts/validation.txt
 
 if [[ $SKIP_BUILDS == 1 ]]; then echo; echo "CI PASSED (builds skipped)"; exit 0; fi
 
+# Unity does not compress Development web builds, so Web Release is the default.
+if [[ $WEB_DEV == 1 ]]; then WEB_PROFILE="Web Dev"; else WEB_PROFILE="Web Release"; fi
 if [[ $RELEASE == 1 ]]; then
-  WEB_PROFILE="Web Release"; ANDROID_PROFILE="Android Release"; ANDROID_OUT="builds/android/BabyChampion.aab"
+  ANDROID_PROFILE="Android Release"; ANDROID_OUT="builds/android/BabyChampion.aab"
 else
-  WEB_PROFILE="Web Dev"; ANDROID_PROFILE="Android Dev"; ANDROID_OUT="builds/android/BabyChampion.apk"
+  ANDROID_PROFILE="Android Dev"; ANDROID_OUT="builds/android/BabyChampion.apk"
 fi
 
 step "Web build ($WEB_PROFILE)"
@@ -113,7 +118,7 @@ kib() { du -sk "$1" | cut -f1; }
 WEB_KB="$(kib builds/web)"
 WEB_DOWNLOAD_KB="$(kib builds/web/Build)"
 ANDROID_KB="$(kib "$ANDROID_OUT")"
-echo "Web ($WEB_PROFILE):         ${WEB_KB} KiB total, ${WEB_DOWNLOAD_KB} KiB download (Build/; Dev builds are uncompressed)"
+echo "Web ($WEB_PROFILE):         ${WEB_KB} KiB total, ${WEB_DOWNLOAD_KB} KiB download (Build/)"
 echo "Android ($ANDROID_PROFILE): ${ANDROID_KB} KiB ($ANDROID_OUT)"
 [[ -f artifacts/build-sizes.csv ]] || echo "date,commit,web_profile,web_total_kib,web_download_kib,android_profile,android_kib" > artifacts/build-sizes.csv
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ),$(git rev-parse --short HEAD 2>/dev/null || echo none),$WEB_PROFILE,$WEB_KB,$WEB_DOWNLOAD_KB,$ANDROID_PROFILE,$ANDROID_KB" >> artifacts/build-sizes.csv

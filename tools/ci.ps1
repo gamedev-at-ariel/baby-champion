@@ -1,10 +1,14 @@
 # Windows version of tools/ci.sh. Runs, in order, stopping at the first failure:
 #   EditMode tests -> PlayMode tests -> data validation -> Web build -> Android build -> build sizes
 #
-# Usage: tools\ci.ps1 [-Release] [-SkipBuilds] [-VerifyBuildFailure]
+# Usage: tools\ci.ps1 [-Release] [-WebDev] [-SkipBuilds] [-VerifyBuildFailure]
+#   (default)  build Web Release (the one for itch.io) and Android Dev (APK)
+#   -Release   build Android Release (AAB) instead of Android Dev
+#   -WebDev    build Web Dev (uncompressed, for local debugging) instead of Web Release
 # Close the interactive Unity Editor first: batch mode cannot open a project that is already open.
 param(
     [switch]$Release,
+    [switch]$WebDev,
     [switch]$SkipBuilds,
     [switch]$VerifyBuildFailure
 )
@@ -68,8 +72,10 @@ Get-Content 'artifacts/validation.txt'
 
 if ($SkipBuilds) { Write-Host ''; Write-Host 'CI PASSED (builds skipped)'; exit 0 }
 
-if ($Release) { $WebProfile = 'Web Release'; $AndroidProfile = 'Android Release'; $AndroidOut = 'builds/android/BabyChampion.aab' }
-else { $WebProfile = 'Web Dev'; $AndroidProfile = 'Android Dev'; $AndroidOut = 'builds/android/BabyChampion.apk' }
+# Unity does not compress Development web builds, so Web Release is the default.
+if ($WebDev) { $WebProfile = 'Web Dev' } else { $WebProfile = 'Web Release' }
+if ($Release) { $AndroidProfile = 'Android Release'; $AndroidOut = 'builds/android/BabyChampion.aab' }
+else { $AndroidProfile = 'Android Dev'; $AndroidOut = 'builds/android/BabyChampion.apk' }
 
 Step "Web build ($WebProfile)"
 if (Test-Path 'builds/web') { Remove-Item -Recurse -Force 'builds/web' }
@@ -89,7 +95,7 @@ function KiB($path) { [math]::Ceiling(((Get-ChildItem $path -Recurse -File | Mea
 $WebKb = KiB 'builds/web'
 $WebDownloadKb = KiB 'builds/web/Build'
 $AndroidKb = KiB $AndroidOut
-Write-Host "Web ($WebProfile):         $WebKb KiB total, $WebDownloadKb KiB download (Build/; Dev builds are uncompressed)"
+Write-Host "Web ($WebProfile):         $WebKb KiB total, $WebDownloadKb KiB download (Build/)"
 Write-Host "Android ($AndroidProfile): $AndroidKb KiB ($AndroidOut)"
 $csv = 'artifacts/build-sizes.csv'
 if (-not (Test-Path $csv)) { 'date,commit,web_profile,web_total_kib,web_download_kib,android_profile,android_kib' | Out-File $csv -Encoding utf8 }

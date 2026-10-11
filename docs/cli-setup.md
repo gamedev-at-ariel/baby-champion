@@ -60,14 +60,15 @@ While the Editor is open, the same checks can run inside it instead:
 
 | Purpose | Command |
 |---|---|
-| Everything, in order | `tools/ci.sh` (Windows: `tools\ci.ps1`) |
-| Release profiles (Web Release + Android Release AAB) | `tools/ci.sh --release` |
+| Everything, in order (builds Web Release + Android Dev APK) | `tools/ci.sh` (Windows: `tools\ci.ps1`) |
+| Android Release AAB instead of the APK | `tools/ci.sh --release` (`-Release`) |
+| Web Dev (uncompressed, local debugging) instead of Web Release | `tools/ci.sh --web-dev` (`-WebDev`) |
 | Tests and validation only | `tools/ci.sh --skip-builds` |
 | Check that a failed build returns non-zero | `tools/ci.sh --verify-build-failure` |
 | EditMode tests | `tools/unity.sh -nographics -runTests -testPlatform EditMode -testResults artifacts/editmode.xml` |
 | PlayMode tests | `tools/unity.sh -runTests -testPlatform PlayMode -testResults artifacts/playmode.xml` |
 | Data validation | `tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run` |
-| Web build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Web Dev.asset" -build builds/web` |
+| Web build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Web Release.asset" -build builds/web` |
 | Android build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Android Dev.asset" -build builds/android/BabyChampion.apk` |
 
 `tools/ci.sh` writes logs to `artifacts/logs/`, test results to `artifacts/*.xml`, and appends the build sizes to `artifacts/build-sizes.csv`. The baseline is in `docs/build-size-baseline.md`.
@@ -109,4 +110,4 @@ adb logcat -s Unity        # shows "Baby Champion <version>" and "[DevArgs] time
 
 ## 7. Uploading the web build to itch.io
 
-Build the *Web Release* profile (`tools/ci.sh --release`, or the Web build command above with `Web Release.asset`). Zip the *contents* of the output folder, so that `index.html` sits at the top of the zip and not inside a `web/` folder, create an itch.io project of kind **HTML**, upload the zip, and tick *This file will be played in the browser*. Keep the page private (Draft or Restricted) until release.
+Run `tools/ci.sh` (it builds *Web Release* into `builds/web/`). Zip the *contents* of `builds/web/`, so that `index.html` sits at the top of the zip and not inside a `web/` folder, create an itch.io project of kind **HTML**, upload the zip, and tick *This file will be played in the browser*. Keep the page private (Draft or Restricted) until release.

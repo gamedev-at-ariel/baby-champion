@@ -26,27 +26,30 @@ All commands run from the project root through a small wrapper, **`tools/unity.s
 | PlayMode tests | `tools/unity.sh -runTests -testPlatform PlayMode -testResults artifacts/playmode.xml` | Exit code 0. |
 | Data validation | `tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run` | Exit code 0; report in `artifacts/validation.txt`. |
 | Balance simulator | `tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level <N> -bot <name> -runs <K> -seed <S>` | Exit code 0; results in `artifacts/balance/*.csv`; targets in Section 6 met. |
-| Web build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Web.asset" -build builds/web` | Exit code 0; build size within budget. |
-| Android build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Android.asset" -build builds/android/BabyChampion.apk` | Exit code 0; APK (dev profile) or AAB (release profile) produced. |
+| Web build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Web Release.asset" -build builds/web` | Log says `Build Finished, Result: Success.`; `index.html` produced; build size within budget. |
+| Android build | `tools/unity.sh -quit -activeBuildProfile "Assets/Settings/Build Profiles/Android Dev.asset" -build builds/android/BabyChampion.apk` | Log says `Build Finished, Result: Success.`; APK (Android Dev) or AAB (Android Release) produced. |
 | Screenshots | `tools/unity.sh -quit -executeMethod BabyChampion.Editor.ScreenshotTool.Run -levels all` | Images in `artifacts/screens/` for visual review (needs graphics, so no `-nographics`). |
 
 The test commands have no `-quit`: the test runner closes Unity itself, and `-quit` would make Unity exit before the tests run.
 
-**Builds use Unity 6 Build Profiles, not a custom build script.** A Build Profile is an asset that stores the platform and its build settings. Unity 6 builds one directly from the command line with `-activeBuildProfile` and `-build`, so no build code is needed. There are four profiles: *Web Dev*, *Web Release*, *Android Dev* and *Android Release*. The table shows one of each for short. The only build code is a small editor hook that runs before every build and stamps the version number. Build size is checked by `tools/ci.sh` after the build.
+**Builds use Unity 6 Build Profiles, not a custom build script.** A Build Profile is an asset that stores the platform and its build settings. Unity 6 builds one directly from the command line with `-activeBuildProfile` and `-build`, so no build code is needed. There are four profiles: *Web Dev*, *Web Release*, *Android Dev* and *Android Release*. `tools/ci.sh` builds **Web Release** and **Android Dev** by default: Unity does not compress Development web builds (about 107 MB against 16 MB in M0), so only Web Release is suitable for itch.io, and the APK is what you install for playtests. `--release` switches Android to the Release AAB; `--web-dev` builds Web Dev for local debugging. The only build code is a small editor hook that runs before every build and stamps the version number. Build size is checked by `tools/ci.sh` after the build.
 
 **Who writes the scripts and tools:** I (Claude) write `tools/unity.sh`, `tools/ci.sh`, the Build Profiles and the version hook in M0. I write each editor tool (data validator, balance simulator, screenshot tool) in the milestone that first needs it. They are part of the code base like everything else, and you review them like any other change. Each milestone's CLI checks only count once I've actually run them and they pass.
 
 Rules:
-- Every executeMethod tool returns a **non-zero exit code on failure**, so CI and scripts can rely on it. M0 also confirms that a failed `-build` returns non-zero.
+- Every executeMethod tool returns a **non-zero exit code on failure**, so CI and scripts can rely on it.
+- **A build counts only when its log says `Build Finished, Result: Success.` and the output file exists.** Unity can exit 0 from a failed `-build` (found in M0); `tools/ci.sh --verify-build-failure` checks that such a failure is caught.
+- **Batch runs need the interactive Editor closed**, because Unity allows only one Editor per project. While it is open, the same checks run live: `unity recompile --strict`, `unity command run_tests`, `unity command bc_validate_data`.
+- **Every executeMethod tool also has a `[CliCommand]` twin**, so it runs in the open Editor too (as `bc_validate_data` does for the data validator).
 - The simulation uses a **seeded random generator**; tests and balance runs pass `-seed`, so every result is reproducible.
-- PlayMode tests drive input through the Input System test fixture (simulated pointer and touch), so interaction is tested without a human.
+- PlayMode tests drive input through the Input System test fixture (simulated pointer and touch), so interaction is tested without a human. Add simulated devices **after** the test scene has loaded: in batch mode, a device added before the load loses its state.
 - Development builds accept runtime arguments: `-level N -timescale X -seed S -skipIntro`. On Web they are URL parameters (`?level=N&timescale=X`); on Android they are passed when launching the app through `adb` (exact command documented in M0).
 
 ---
 
 ## 3. Base game milestones
 
-### M0 - Project foundation and pipeline
+### M0 - Project foundation and pipeline ✅ Done (2026-10-11, v0.1.0)
 **Goal:** an empty but correctly configured project that builds for both platforms from the command line.
 
 **Scope**
@@ -64,8 +67,13 @@ Rules:
 - Build size is printed and recorded as the baseline.
 
 **Playtest (5 minutes)**
-- Zip the web build folder ("builds/web") and upload it to a private itch.io page. Open it on a desktop browser and on your phone's browser; install the Android APK.
+- Zip the contents of the Web Release build folder ("builds/web-release") and upload it to a private itch.io page. Open it on a desktop browser and on your phone's browser; install the Android APK.
 - Check: it loads, tap/click moves the cube, landscape orientation, loading time feels acceptable.
+
+**Notes**
+- *Decisions:* Unity 6000.3.25f1 is pinned. Local scripts only, no CI service. Android app ID `com.erelsegalhalevi.babychampion`. The version lives in `version.txt`, and each build is stamped `<version>+<commit>`. Web builds use Gzip with decompression fallback. Quality tiers: Web is the default for Web and the Editor; Android High is the default on Android, with Android Low (render scale 0.75, no shadows) also available.
+- *Deviations:* Folders follow CLAUDE.md (`Assets/Scripts/{Simulation,Game}`, `Assets/Editor`, `Assets/Tests/{EditMode,PlayMode}`) instead of `Runtime/...`. **Unity exits 0 from a failed `-build`**, so `tools/ci.sh` also requires `Build Finished, Result: Success.` in the build log and checks for the output file; `--verify-build-failure` proves the failure is caught. **Development web builds are uncompressed** (about 107 MB against 16 MB for Release), so itch.io gets Web Release. Gradle's default cache path in a non-ASCII Windows user folder breaks Android builds, so `AndroidBuildEnvironment.cs` points `GRADLE_USER_HOME` at `Library/Gradle`. Batch runs need the interactive Editor closed (one Editor per project). Project setup is reproducible through `unity command bc_setup_*` commands. Using `InputTestFixture` requires listing the Input System as testable, which also runs its own PlayMode tests (2 pass, 2 skipped).
+- *Deferred:* Android Release AAB not built or measured yet; `tools/ci.ps1` parses cleanly but has not been run; release keystore deferred to M12; runtime arguments other than `-timescale` are parsed but unused; the `adb` launch-argument command has not been tried on a device. Baseline sizes are in `docs/build-size-baseline.md`.
 
 ---
 
@@ -87,6 +95,7 @@ Rules:
 - EditMode tests for each rule, e.g. "Hunger at 70 starts crying", "Stress 60+ blocks sleep", "crying doubles Energy drain", "dirty diaper for 2 h gives rash", "delivery arrives after 2 in-game hours", "save/load round-trip gives identical state".
 - A test that the simulation accepts actions only through the parent-controller interface.
 - Data validator: every age band has all rates; no negative prices; ranges are sensible.
+- The balance simulator also runs in the open Editor through a `[CliCommand]` (for example `unity command bc_balance_sim`), not only through `-executeMethod`.
 - Balance simulator on a newborn day: Greedy survives in at least 95% of runs, Idle fails in 100%, Sloppy is in between. Outputs crying minutes, Energy curve and supply use per run.
 
 **Playtest (15 minutes)**
@@ -108,8 +117,8 @@ Rules:
 
 **CLI verification**
 - PlayMode tests: the parent can path to every interactable object in the house; every action in the radial menu triggers the matching simulation command; pinch and two-finger rotate gestures work with simulated touch.
-- Screenshot tool captures every room and the HUD at phone and desktop resolutions for review.
-- Web and Android builds pass; build size compared with the baseline.
+- Screenshot tool captures every room and the HUD at phone and desktop resolutions for review. It writes to `artifacts/screens/` itself, because the Editor's built-in capture command saves only under `Assets/`.
+- Web and Android builds pass; build size compared with the baseline in `docs/build-size-baseline.md`.
 
 **Playtest (20 minutes, on phone and desktop)**
 - Play a free day with a newborn.
@@ -196,7 +205,7 @@ Rules:
 **CLI verification**
 - Full `tools/ci.sh` run.
 - Performance tests (Unity Performance Testing package) in PlayMode for a busy scene; frame-time budget assertion; optionally run on the device with `-testPlatform Android`.
-- Build-size budget check fails the build if the web download exceeds the agreed budget (proposed: 50 MB compressed; to confirm).
+- Build-size budget check in `tools/ci.sh --release` fails the run if the **Web Release** download (`Build/`) exceeds the agreed budget (proposed: 50 MB compressed; to confirm). M0 baseline: 16.1 MB.
 
 **Playtest (external, 5-10 people from the target audience)**
 - Each plays the slice for 30-45 minutes, then answers a short questionnaire.
@@ -263,9 +272,9 @@ Rules:
 ---
 
 ### M12 - Release (base game)
-**Scope:** release builds; itch.io page; Google Play listing and release AAB; privacy policy; audience declaration (adults); ad-service interface with no-op implementation in place; final consultant sign-off.
+**Scope:** release builds; release keystore for signing the AAB (M0 builds use the debug key); first measurement of the AAB size against the baseline; itch.io page; Google Play listing and release AAB; privacy policy; audience declaration (adults); ad-service interface with no-op implementation in place; final consultant sign-off.
 
-**CLI verification:** `tools/ci.sh` with release flags produces a signed AAB and the web build; version number embedded and checked; final full balance and test run archived with the release, as the **reference results** for the later-stage milestones.
+**CLI verification:** `tools/ci.sh` with release flags produces a signed AAB and the web build; version number embedded and checked (raise `version.txt` before every Play upload, since the Android versionCode is derived from it and must increase); final full balance and test run archived with the release, as the **reference results** for the later-stage milestones.
 
 **Playtest:** a fresh install on Android and a fresh browser on itch.io, from first launch through the first chapter. Check store-listing screenshots match the game.
 
@@ -346,7 +355,7 @@ These start after the base game is released. L2 depends on L1; L3 is independent
 
 | Before | Decision |
 |---|---|
-| M0 | Exact Unity 6.3+ version to pin; CI service (or local-only scripts). |
+| M0 | ✅ Resolved: Unity 6000.3.25f1 pinned; local scripts only, no CI service. |
 | M2 | UI technology: UI Toolkit (proposed) or uGUI. |
 | M6 | Reference Android device for performance; web build-size budget; who the consultant is; where to recruit playtesters. |
 | M11 | Languages for localization. |
