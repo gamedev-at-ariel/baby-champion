@@ -64,7 +64,7 @@ Rules:
 - Build size is printed and recorded as the baseline.
 
 **Playtest (5 minutes)**
-- Upload the web build to a private itch.io page. Open it on a desktop browser and on your phone's browser; install the Android APK.
+- Zip the web build folder ("builds/web") and upload it to a private itch.io page. Open it on a desktop browser and on your phone's browser; install the Android APK.
 - Check: it loads, tap/click moves the cube, landscape orientation, loading time feels acceptable.
 
 ---

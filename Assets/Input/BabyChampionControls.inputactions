@@ -1,0 +1,115 @@
+{
+    "version": 1,
+    "name": "BabyChampionControls",
+    "maps": [
+        {
+            "name": "Gameplay",
+            "id": "4423713c-bf80-44e1-8bac-34fdddd269db",
+            "actions": [
+                {
+                    "name": "Point",
+                    "type": "Value",
+                    "id": "5eed5b0b-ba8b-45f4-b9d3-b3008b0ce5c4",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Click",
+                    "type": "Button",
+                    "id": "be85f62b-c9fc-4b40-8029-7f0368f10151",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Hold",
+                    "type": "Button",
+                    "id": "e5195843-0155-40ff-baec-32210568126d",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "Hold(duration=0.5)",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Drag",
+                    "type": "Value",
+                    "id": "28aadf48-129e-4148-a8ac-5fe3bb90f910",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Scroll",
+                    "type": "Value",
+                    "id": "e0d136e6-ac6c-4677-a7f8-621bd601b8e2",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "66ac6d78-0684-490a-9e26-9cb026d2d64b",
+                    "path": "<Pointer>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Point",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "17fd7b7b-06cc-48ff-b85e-16e8f6e4cbf7",
+                    "path": "<Pointer>/press",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Click",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7ceb86b6-acb6-4e87-b8f9-92787d7035b7",
+                    "path": "<Pointer>/press",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Hold",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c4672b8f-e00c-49ac-8d34-88c604f8ed59",
+                    "path": "<Pointer>/delta",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Drag",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "925530f2-024f-454b-86d0-60024e19eadd",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

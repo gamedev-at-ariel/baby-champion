@@ -1,0 +1,17 @@
+{
+    "name": "BabyChampion.Game",
+    "rootNamespace": "BabyChampion.Game",
+    "references": [
+        "BabyChampion.Simulation",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

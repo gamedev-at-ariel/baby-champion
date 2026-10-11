@@ -1,0 +1,23 @@
+{
+    "name": "BabyChampion.Editor",
+    "rootNamespace": "BabyChampion.Editor",
+    "references": [
+        "BabyChampion.Simulation",
+        "BabyChampion.Game",
+        "Unity.InputSystem",
+        "Unity.Pipeline",
+        "Unity.Pipeline.Attributes",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

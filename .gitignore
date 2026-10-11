@@ -107,3 +107,10 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Baby Champion CLI outputs (tools/ci.sh); the build-size baseline lives in docs/
+/artifacts/
+test-results.xml
+# Written by the test runner during PlayMode runs
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*.meta
