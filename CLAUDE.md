@@ -4,9 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-The repository is an empty scaffold: `README.md`, `LICENSE` (GPL-3.0), and Unity's standard
-`.gitignore`. There is no `Assets/`, `Packages/`, or `ProjectSettings/` yet — the Unity project
-still has to be created. Until it exists, most commands below have nothing to act on.
+Milestone **M0 (project foundation and pipeline) is done** — v0.1.0, see `version.txt`. The next
+milestone is **M1 (simulation core, headless)**. The milestone plan is `3-plan.md`; each finished
+milestone there has a *Notes* block (decisions, deviations, deferred items) worth reading first.
+
+Layout:
+- `Assets/Scripts/Simulation` — pure C# rules, assembly `BabyChampion.Simulation`, **no UnityEngine
+  reference** (an editor test enforces this).
+- `Assets/Scripts/Game` — Unity-side game code (`BabyChampion.Game`).
+- `Assets/Editor` — editor tools and `[CliCommand]`s (`BabyChampion.Editor`): `ProjectSetup.cs`
+  (`bc_setup_*`), `DataValidator.cs` (`bc_validate_data`), `VersionStamp.cs`,
+  `AndroidBuildEnvironment.cs`, `BuildFailureProbe.cs`.
+- `Assets/Tests/{EditMode,PlayMode}` — test assemblies.
+- `Assets/Settings/Build Profiles` — *Web Dev*, *Web Release*, *Android Dev*, *Android Release*.
+- `tools/` — `unity.sh`/`unity.ps1` (batch-mode wrapper) and `ci.sh`/`ci.ps1` (full pipeline).
+- `docs/cli-setup.md` — machine setup and CLI commands; `docs/build-size-baseline.md` — size baseline.
 
 Purpose (from README): *"Be a champion parent! For demonstrating game-development via Unity CLI
 and Claude Code."* The Unity CLI is the point of this repo, not an incidental tool — prefer it
@@ -65,6 +77,28 @@ unity test --rerun-failed                 # only what failed last run
 unity test --affected --since <ref>       # only tests a change can reach
 ```
 
+### Batch pipeline (`tools/`)
+
+Full details in `3-plan.md` Section 2 and `docs/cli-setup.md`. Key points:
+
+```bash
+tools/ci.sh                    # tests + validation + Web Release + Android Dev APK; stops on first failure
+tools/ci.sh --skip-builds      # tests and validation only
+tools/ci.sh --release          # Android Release AAB instead of the APK
+tools/ci.sh --verify-build-failure   # proves a failed build is caught
+tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run
+```
+
+- **Batch runs need the interactive Editor closed** (one Editor per project). While it is open, use
+  the live equivalents: `unity recompile --strict`, `unity command run_tests`,
+  `unity command bc_validate_data`.
+- **Unity can exit 0 from a failed `-build`.** A build counts only if the log says
+  `Build Finished, Result: Success.` and the output file exists — `tools/ci.sh` checks both.
+- Builds use Unity 6 Build Profiles (`-activeBuildProfile ... -build`), not a custom build script.
+  Upload **Web Release** to itch.io; Development web builds are uncompressed (~107 MB vs ~16 MB).
+- Outputs go to `artifacts/` (test XML, logs, `validation.txt`, `balance/*.csv`, `screens/`) and
+  `builds/`.
+
 ### Useful global flags
 
 `--json` / `--format <human|json|tsv|ndjson|github>` for parseable output, `--no-banner` and
@@ -74,15 +108,34 @@ on failure.
 ## Conventions
 
 - Unity's `.gitignore` already excludes `Library/`, `Temp/`, `Logs/`, `Build(s)/`, `UserSettings/`,
-  `.utmp/`, and generated `*.csproj`/`*.sln`. Never commit those; never hand-edit them.
+  `.utmp/`, and generated `*.csproj`/`*.sln`, plus the project's `artifacts/`. Never commit those;
+  never hand-edit them.
 - `.meta` files are part of the source — commit them alongside the assets they describe.
 
 # Project guidelines
 
 ## Stack
-- Unity 6.3.x, URP pipeline, new Input System.
+- Unity 6000.3.25f1 (pinned), URP pipeline, new Input System only (legacy Input Manager disabled).
+- Targets: Web (itch.io) and Android (app ID `com.erelsegalhalevi.babychampion`, IL2CPP/ARM64, landscape).
 - C# scripts live in Assets/Scripts/, one folder per system.
-- Game spec in GameDesign.md. Milestones in PLAN.md.
+- Game spec in 2-design-detailed.md (revision history in GameDesignRevisionHistory.md).
+  Milestones in 3-plan.md. (`PLAN.md` and `1-design-raw.md` are older drafts.)
+
+## Architecture rules (from 3-plan.md)
+- **Simulation first.** Core rules (meters, time, economy, Joy) live in `BabyChampion.Simulation`
+  as plain C#, testable headlessly; the Game assembly only presents and drives it.
+- **Parent-controller interface (from M1).** Every parent action goes through it — the player, test
+  bots, and later the partner AI (L1) and second player (L2). Never let the simulation be mutated
+  around it.
+- **Seeded randomness.** The simulation uses a seeded RNG; tests and balance runs pass a seed so
+  every result is reproducible.
+- **Every `-executeMethod` tool** returns a non-zero exit code on failure **and has a `[CliCommand]`
+  twin** (`bc_*`) so it also runs in the open Editor.
+- Game data (rates, prices, levels) lives in ScriptableObjects and is checked by the data validator;
+  extend the validator whenever you add a data type.
+- PlayMode input tests use the Input System `InputTestFixture`; add simulated devices **after** the
+  test scene has loaded (devices added before the load lose their state in batch mode).
+- Development builds accept `-level N -timescale X -seed S -skipIntro` (URL params on Web).
 
 ## Working with the editor
 - The editor is usually open with the Pipeline package connected. Check with `unity status`.
@@ -97,8 +150,13 @@ on failure.
 3. For gameplay changes: enter Play mode via eval, check the state you expect, report it, and exit Play mode.
 4. Summarize what changed and what I should playtest by hand.
 
+When a milestone is finished, also run its *CLI verification* list from 3-plan.md (normally a green
+`tools/ci.sh` with the Editor closed — ask me before closing it), then mark it ✅ in 3-plan.md
+with the date and version and add a *Notes* block (decisions, deviations, deferred), as for M0.
+
 ## Rules
-- Work on one milestone from PLAN.md at a time. Don't start the next one unasked.
+- Work on one milestone from 3-plan.md at a time. Don't start the next one unasked.
+- Some milestones need a decision from me first (3-plan.md Section 5) — ask, don't assume.
 - Don't commit. I commit after playtesting.
 - If the editor isn't connected, say so and stop. Don't fall back to editing scene files.
 - Use placeholder primitives for art (cubes, capsules, solid colours).
