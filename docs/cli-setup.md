@@ -76,6 +76,19 @@ While the Editor is open, the same checks can run inside it instead:
 Project-setup commands (run them in the open Editor; they are idempotent):
 `unity command bc_setup_all`, or one at a time: `bc_setup_player`, `bc_setup_quality`, `bc_setup_input`, `bc_setup_test_scene`, `bc_setup_build_profiles`.
 
+Simulation data and tools (M1):
+
+| Purpose | Batch (Editor closed) | Open Editor |
+|---|---|---|
+| Balance simulator | `tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level 1 -bot all -runs 500 -seed 1 [-feeding both\|breast\|formula] [-nocheck]` | `unity command bc_balance_sim -- --level 1 --bot all --runs 500 --seed 1 --feeding both` |
+| Create the data assets from the built-in defaults | | `unity command bc_setup_data` (`-- --reset true` overwrites) |
+| Export / import the data as JSON (`artifacts/data/`) | | `unity command bc_export_data`, `unity command bc_import_data` |
+| Rebuild the debug scene | | `unity command bc_setup_debug_scene` |
+
+The balance simulator writes `artifacts/balance/level<N>-<feeding>-<bot>-runs.csv` (one row per run: outcome, crying minutes by cause, supply use), `...-energy.csv` (parent Energy at each in-game hour) and `level<N>-<feeding>-summary.csv`. It exits 1 when a 3-plan.md Section 6 target is missed.
+
+PlayMode tests in the open Editor: `unity command run_tests -- --mode playmode --async_tests true`, then poll `unity command test_status`. The synchronous form reports 0 tests.
+
 ## 5. Build profiles
 
 | Profile | Platform | Output | Notes |

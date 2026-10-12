@@ -4,17 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-Milestone **M0 (project foundation and pipeline) is done** — v0.1.0, see `version.txt`. The next
-milestone is **M1 (simulation core, headless)**. The milestone plan is `3-plan.md`; each finished
-milestone there has a *Notes* block (decisions, deviations, deferred items) worth reading first.
+Milestone **M0 (project foundation and pipeline) is done** — v0.1.0, see `version.txt`.
+**M1 (simulation core, headless) is implemented and awaiting the user's playtest.** The milestone
+plan is `3-plan.md`; each milestone there has a *Notes* block (decisions, deviations, deferred
+items) worth reading first.
 
 Layout:
 - `Assets/Scripts/Simulation` — pure C# rules, assembly `BabyChampion.Simulation`, **no UnityEngine
-  reference** (an editor test enforces this).
-- `Assets/Scripts/Game` — Unity-side game code (`BabyChampion.Game`).
+  reference** (an editor test enforces this). The day simulation is `CareSimulation` (not
+  `Simulation`, which would clash with the namespace); data classes `AgeRateTable`, `PriceList`,
+  `Tuning`; saves and data export use its own `JsonCodec`; test bots and `BalanceRunner` in `Bots/`.
+- `Assets/Scripts/Game` — Unity-side game code (`BabyChampion.Game`): data-asset wrappers
+  (`Data/`) and the M1 debug scene runner (`DebugDay/`).
+- `Assets/Data` — the tuning data (`AgeRates`, `Prices`, `Tuning` assets). Change values through
+  `bc_import_data` or eval, never by editing the `.asset` YAML.
 - `Assets/Editor` — editor tools and `[CliCommand]`s (`BabyChampion.Editor`): `ProjectSetup.cs`
-  (`bc_setup_*`), `DataValidator.cs` (`bc_validate_data`), `VersionStamp.cs`,
-  `AndroidBuildEnvironment.cs`, `BuildFailureProbe.cs`.
+  (`bc_setup_*`), `DataAssets.cs` (`bc_setup_data`, `bc_export_data`, `bc_import_data`),
+  `BalanceSim.cs` (`bc_balance_sim`), `DebugDaySetup.cs` (`bc_setup_debug_scene`),
+  `DataValidator.cs` (`bc_validate_data`), `VersionStamp.cs`, `AndroidBuildEnvironment.cs`,
+  `BuildFailureProbe.cs`.
 - `Assets/Tests/{EditMode,PlayMode}` — test assemblies.
 - `Assets/Settings/Build Profiles` — *Web Dev*, *Web Release*, *Android Dev*, *Android Release*.
 - `tools/` — `unity.sh`/`unity.ps1` (batch-mode wrapper) and `ci.sh`/`ci.ps1` (full pipeline).
@@ -90,8 +98,14 @@ tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.DataValidato
 ```
 
 - **Batch runs need the interactive Editor closed** (one Editor per project). While it is open, use
-  the live equivalents: `unity recompile --strict`, `unity command run_tests`,
-  `unity command bc_validate_data`.
+  the live equivalents: `unity recompile --strict`, `unity command run_tests -- --mode editor`,
+  `unity command bc_validate_data`, `unity command bc_balance_sim`. PlayMode tests in the open
+  Editor only run asynchronously (`run_tests -- --mode playmode --async_tests true`, then poll
+  `test_status`); the synchronous call reports 0 tests. Never log errors into the Editor while
+  they run (e.g. by calling a command that does not exist): it fails the running test.
+- `editor_set_run_in_background` does not exist in this Pipeline version. Setting
+  `Application.runInBackground` via eval also flips `PlayerSettings.runInBackground` in memory —
+  set it back to `false` after Play-mode checks.
 - **Unity can exit 0 from a failed `-build`.** A build counts only if the log says
   `Build Finished, Result: Success.` and the output file exists — `tools/ci.sh` checks both.
 - Builds use Unity 6 Build Profiles (`-activeBuildProfile ... -build`), not a custom build script.

@@ -15,6 +15,13 @@ namespace BabyChampion.Simulation
             if (_state == 0) _state = 0x9E3779B9u;
         }
 
+        /// <summary>The generator's internal state, so a saved simulation continues the same sequence.</summary>
+        public uint State
+        {
+            get => _state;
+            set => _state = value == 0 ? 0x9E3779B9u : value;
+        }
+
         public uint NextUInt()
         {
             uint x = _state;

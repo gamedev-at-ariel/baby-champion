@@ -173,8 +173,18 @@ namespace BabyChampion.Editor
             Directory.CreateDirectory(Path.GetDirectoryName(TestScenePath));
             EditorSceneManager.SaveScene(scene, TestScenePath);
 
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(TestScenePath, true) };
+            AddBuildScene(TestScenePath);
             return "test scene: saved " + TestScenePath;
+        }
+
+        /// <summary>Adds a scene to the build list (once), optionally as the first scene, keeping the others.</summary>
+        public static void AddBuildScene(string path, bool first = false)
+        {
+            var scenes = EditorBuildSettings.scenes.Where(s => s.path != path).ToList();
+            var scene = new EditorBuildSettingsScene(path, true);
+            if (first) scenes.Insert(0, scene);
+            else scenes.Add(scene);
+            EditorBuildSettings.scenes = scenes.ToArray();
         }
 
         [CliCommand("bc_setup_build_profiles", "Create the Build Profiles Web Dev, Web Release, Android Dev and Android Release")]

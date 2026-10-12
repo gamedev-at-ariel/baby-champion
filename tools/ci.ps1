@@ -1,5 +1,5 @@
 # Windows version of tools/ci.sh. Runs, in order, stopping at the first failure:
-#   EditMode tests -> PlayMode tests -> data validation -> Web build -> Android build -> build sizes
+#   EditMode tests -> PlayMode tests -> data validation -> balance simulator -> Web build -> Android build -> build sizes
 #
 # Usage: tools\ci.ps1 [-Release] [-WebDev] [-SkipBuilds] [-VerifyBuildFailure]
 #   (default)  build Web Release (the one for itch.io) and Android Dev (APK)
@@ -69,6 +69,14 @@ Test-Xml 'artifacts/playmode.xml'
 Step 'Data validation'
 if ((Invoke-Unity 'validation' @('-nographics', '-quit', '-executeMethod', 'BabyChampion.Editor.DataValidator.Run')) -ne 0) { Fail 'data validation' }
 Get-Content 'artifacts/validation.txt'
+
+# Newborn day (level 1) with every bot; fails when a 3-plan.md Section 6 target is missed.
+# Breastfeeding plays like "both", so formula is the only other case worth running.
+foreach ($feeding in 'both', 'formula') {
+    Step "Balance simulator (level 1, $feeding)"
+    if ((Invoke-Unity "balance-$feeding" @('-nographics', '-quit', '-executeMethod', 'BabyChampion.Editor.BalanceSim.Run', '-level', '1', '-bot', 'all', '-runs', '500', '-seed', '1', '-feeding', $feeding)) -ne 0) { Fail "balance targets ($feeding; see artifacts/balance/)" }
+    Select-String -Path "artifacts/logs/balance-$feeding.log" -Pattern '\[BalanceSim\] (.*)' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -Unique
+}
 
 if ($SkipBuilds) { Write-Host ''; Write-Host 'CI PASSED (builds skipped)'; exit 0 }
 

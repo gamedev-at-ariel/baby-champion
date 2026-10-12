@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Full command-line check, in order, stopping at the first failure:
-#   EditMode tests -> PlayMode tests -> data validation -> Web build -> Android build -> build sizes
+#   EditMode tests -> PlayMode tests -> data validation -> balance simulator -> Web build -> Android build -> build sizes
 #
 # Usage: tools/ci.sh [--release] [--web-dev] [--skip-builds] [--verify-build-failure]
 #   (default)               build Web Release (the one for itch.io) and Android Dev (APK)
@@ -89,6 +89,14 @@ check_test_xml artifacts/playmode.xml
 step "Data validation"
 run_unity validation -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run || fail "data validation"
 cat artifacts/validation.txt
+
+# Newborn day (level 1) with every bot; fails when a 3-plan.md Section 6 target is missed.
+# Breastfeeding plays like "both", so formula is the only other case worth running.
+for feeding in both formula; do
+  step "Balance simulator (level 1, $feeding)"
+  run_unity "balance-$feeding" -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level 1 -bot all -runs 500 -seed 1 -feeding "$feeding" || fail "balance targets ($feeding; see artifacts/balance/)"
+  grep "\[BalanceSim\]" "artifacts/logs/balance-$feeding.log" | sed 's/^.*\[BalanceSim\] //' | sort -u
+done
 
 if [[ $SKIP_BUILDS == 1 ]]; then echo; echo "CI PASSED (builds skipped)"; exit 0; fi
 

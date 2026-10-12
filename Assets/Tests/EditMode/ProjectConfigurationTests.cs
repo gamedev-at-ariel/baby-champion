@@ -37,10 +37,11 @@ namespace BabyChampion.Tests.EditMode
         }
 
         [Test]
-        public void TestScene_IsTheFirstBuildScene()
+        public void DebugDayScene_IsTheFirstBuildScene_AndTestSceneIsIncluded()
         {
-            Assert.That(EditorBuildSettings.scenes.Length, Is.GreaterThan(0));
-            Assert.AreEqual(ProjectSetup.TestScenePath, EditorBuildSettings.scenes[0].path);
+            Assert.That(EditorBuildSettings.scenes.Length, Is.GreaterThan(1));
+            Assert.AreEqual(DebugDaySetup.ScenePath, EditorBuildSettings.scenes[0].path);
+            CollectionAssert.Contains(EditorBuildSettings.scenes.Select(s => s.path).ToList(), ProjectSetup.TestScenePath);
         }
 
         [Test]

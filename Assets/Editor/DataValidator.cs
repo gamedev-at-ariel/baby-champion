@@ -7,9 +7,8 @@ using UnityEngine;
 namespace BabyChampion.Editor
 {
     /// <summary>
-    /// Checks all level and tuning data. M0 stub: there is no game data yet, so it only
-    /// proves the pipeline (report file + exit code). Each later milestone adds its checks
-    /// to <see cref="Validate"/>.
+    /// Checks all level and tuning data: the simulation data assets exist and their values are
+    /// complete and sensible (<see cref="ConfigValidator"/>). Later milestones add level checks.
     /// CLI: tools/unity.sh -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run
     /// </summary>
     public static class DataValidator
@@ -19,7 +18,10 @@ namespace BabyChampion.Editor
         public static List<string> Validate()
         {
             var errors = new List<string>();
-            // M1+: age-rate tables, prices, level definitions.
+            foreach (var path in DataAssets.Missing()) errors.Add($"Missing data asset {path} (run unity command bc_setup_data)");
+            if (errors.Count > 0) return errors;
+
+            errors.AddRange(DataAssets.LoadConfig().Validate());
             return errors;
         }
 

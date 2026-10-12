@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 715f3567da6964b46a11464d95929f1c, type: 3}
+  m_Name: AgeRates
+  m_EditorClassIdentifier: BabyChampion.Game::BabyChampion.Game.AgeRatesAsset
+  table:
+    bands:
+    - name: 0-2 mo
+      fromMonth: 0
+      toMonth: 2
+      hungerTo70Minutes: 150
+      awakeWindowMinutes: 60
+      sleepRecoveryMinutes: 50
+      diapersPerDay: 9
+      dirtyShare: 0.35
+      boredomTo70Minutes: 0
+    - name: 3-5 mo
+      fromMonth: 3
+      toMonth: 5
+      hungerTo70Minutes: 180
+      awakeWindowMinutes: 105
+      sleepRecoveryMinutes: 60
+      diapersPerDay: 7
+      dirtyShare: 0.3
+      boredomTo70Minutes: 90
+    - name: 6-11 mo
+      fromMonth: 6
+      toMonth: 11
+      hungerTo70Minutes: 210
+      awakeWindowMinutes: 150
+      sleepRecoveryMinutes: 70
+      diapersPerDay: 6
+      dirtyShare: 0.3
+      boredomTo70Minutes: 80
+    - name: 12-23 mo
+      fromMonth: 12
+      toMonth: 23
+      hungerTo70Minutes: 240
+      awakeWindowMinutes: 300
+      sleepRecoveryMinutes: 90
+      diapersPerDay: 5
+      dirtyShare: 0.3
+      boredomTo70Minutes: 70
+    - name: 24-35 mo
+      fromMonth: 24
+      toMonth: 35
+      hungerTo70Minutes: 240
+      awakeWindowMinutes: 330
+      sleepRecoveryMinutes: 100
+      diapersPerDay: 4
+      dirtyShare: 0.3
+      boredomTo70Minutes: 70

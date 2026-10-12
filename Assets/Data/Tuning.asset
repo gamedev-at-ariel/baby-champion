@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95016d81ed36029479218441327739e6, type: 3}
+  m_Name: Tuning
+  m_EditorClassIdentifier: BabyChampion.Game::BabyChampion.Game.TuningAsset
+  tuning:
+    dayLengthMinutes: 1440
+    dayStartHour: 7
+    minutesPerRealSecond: 2
+    parentSleepTimeMultiplier: 4
+    hungerCryThreshold: 70
+    wetCryAfterMinutes: 60
+    dirtyCryAfterMinutes: 10
+    rashAfterDirtyMinutes: 120
+    overtiredThreshold: 80
+    tensionBlocksSleep: 50
+    tensionCryThreshold: 75
+    boredomCryThreshold: 70
+    boredomFromMonth: 4
+    selfSootheFromMonth: 6
+    minTirednessToSleep: 25
+    restedWakeHunger: 50
+    burpWindowMinutes: 15
+    gasDurationMinutes: 45
+    longCryMinutes: 10
+    tensionFromOvertired: 1
+    tensionFromLongCrying: 0.5
+    tensionFromGas: 0.6
+    tensionFromRash: 0.1
+    tensionDecayCalm: 0.2
+    tensionDecayAsleep: 0.5
+    sootheTensionPerMinute: 3
+    playBoredomPerMinute: 8
+    playExtraTirednessPerMinute: 0.5
+    boredomDecayAsleep: 0.5
+    engagedBoredomMultiplier: 0.5
+    energyDrainAwake: 0.1
+    cryingEnergyMultiplier: 2
+    carryingEnergyMultiplier: 1.5
+    energySleepRecovery: 0.1
+    energyRestRecovery: 0.08
+    lowEnergyThreshold: 20
+    lowEnergyDurationMultiplier: 1.25
+    parentHungerTo70Minutes: 300
+    parentHungerThreshold: 70
+    hungryRecoveryMultiplier: 0.5
+    hungryDrainMultiplier: 1.5
+    breastfeedParentHunger: 8
+    stressBlocksSleep: 60
+    stressFromCrying: 0.5
+    stressFromLowSupplies: 0.05
+    stressFromLowMoney: 0.03
+    lowSupplyCount: 2
+    lowMoney: 20
+    stressDecayCalm: 0.1
+    stressDecayEating: 0.5
+    stressDecayResting: 0.3
+    joyDecay: 0.02
+    joyFromPlay: 0.5
+    breastfeedMinutes: 25
+    prepareBottleMinutes: 10
+    bottleFeedMinutes: 15
+    burpMinutes: 4
+    changeDiaperMinutes: 5
+    putToSleepMinutes: 10
+    playMinutes: 10
+    eatMinutes: 15
+    minBabyHungerToFeed: 20
+    minParentHungerToEat: 10
+    maxBottlesReady: 2
+    cryingBudgetMinutes: 140
+    maxContinuousCryMinutes: 30
+    start:
+      babyHunger: 30
+      babyTiredness: 20
+      parentEnergy: 70
+      parentHunger: 20
+      parentStress: 10
+      parentJoy: 40
+      money: 150
+      diapers: 12
+      wipes: 30
+      formula: 8
+      babyFood: 0
+      adultFood: 4
