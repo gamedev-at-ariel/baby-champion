@@ -77,7 +77,7 @@ MonoBehaviour:
     minBabyHungerToFeed: 20
     minParentHungerToEat: 10
     maxBottlesReady: 2
-    cryingBudgetMinutes: 140
+    cryingBudgetMinutes: 180
     maxContinuousCryMinutes: 30
     start:
       babyHunger: 30

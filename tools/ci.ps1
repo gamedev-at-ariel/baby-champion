@@ -1,5 +1,5 @@
 # Windows version of tools/ci.sh. Runs, in order, stopping at the first failure:
-#   EditMode tests -> PlayMode tests -> data validation -> balance simulator -> Web build -> Android build -> build sizes
+#   EditMode tests -> PlayMode tests -> data validation -> balance simulator -> screenshots -> Web build -> Android build -> build sizes
 #
 # Usage: tools\ci.ps1 [-Release] [-WebDev] [-SkipBuilds] [-VerifyBuildFailure]
 #   (default)  build Web Release (the one for itch.io) and Android Dev (APK)
@@ -80,6 +80,12 @@ foreach ($feeding in 'both', 'formula') {
     if ((Invoke-Unity "balance-$feeding" @('-nographics', '-quit', '-executeMethod', 'BabyChampion.Editor.BalanceSim.Run', '-level', '1', '-bot', 'all', '-runs', '500', '-seed', '1', '-feeding', $feeding)) -ne 0) { Fail "balance targets ($feeding; see artifacts/balance/)" }
     Select-String -Path "artifacts/logs/balance-$feeding.log" -Pattern '\[BalanceSim\] (.*)' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -Unique
 }
+
+# Every room, the HUD, the radial menu and the phone at phone and desktop resolutions, for review.
+# Needs graphics and enters Play mode, so no -nographics and no -quit: the tool exits by itself.
+Step 'Screenshots'
+if ((Invoke-Unity 'screenshots' @('-executeMethod', 'BabyChampion.Editor.ScreenshotTool.Run')) -ne 0) { Fail 'screenshots (see artifacts/logs/screenshots.log)' }
+Select-String -Path 'artifacts/logs/screenshots.log' -Pattern '\[Screenshots\] (.*)' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -Unique
 
 if ($SkipBuilds) { Write-Host ''; Write-Host 'CI PASSED (builds skipped)'; exit 0 }
 

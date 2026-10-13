@@ -84,6 +84,8 @@ Simulation data and tools (M1):
 | Create the data assets from the built-in defaults | | `unity command bc_setup_data` (`-- --reset true` overwrites) |
 | Export / import the data as JSON (`artifacts/data/`) | | `unity command bc_export_data`, `unity command bc_import_data` |
 | Rebuild the debug scene | | `unity command bc_setup_debug_scene` |
+| Rebuild the house scene (rooms, furniture, NavMesh, HUD) | | `unity command bc_setup_house` |
+| Screenshots of every room, the HUD, radial menu and phone (`artifacts/screens/`) | `tools/unity.sh -executeMethod BabyChampion.Editor.ScreenshotTool.Run` (needs graphics; no `-quit`, it exits itself) | `unity command bc_screenshots`, then `unity command bc_screenshots_status` |
 
 The balance simulator writes `artifacts/balance/level<N>-<feeding>-<bot>-runs.csv` (one row per run: outcome, crying minutes by cause, supply use), `...-energy.csv` (parent Energy at each in-game hour) and `level<N>-<feeding>-summary.csv`. It exits 1 when a 3-plan.md Section 6 target is missed.
 

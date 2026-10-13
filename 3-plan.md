@@ -133,6 +133,17 @@ Rules:
 - Play a free day with a newborn.
 - Check: can you tell *why* the baby is crying from the hints alone? Are tap targets big enough on the phone? Is the camera ever annoying? Is the radial menu fast enough when several needs pile up?
 
+**Notes** (implemented 2026-10-13; awaiting `tools/ci.sh` with the Editor closed, and playtest)
+- *Where:* `Assets/Scenes/House.unity` (now the first build scene; DebugDay and TestScene stay in the build), built by `unity command bc_setup_house` from primitives, with the NavMesh baked into `Assets/Scenes/House/NavMesh.asset`. Code in `Assets/Scripts/Game/House`; HUD style in `Assets/UI/Hud.uss`. Screenshot tool: `bc_screenshots` (open Editor) and `ScreenshotTool.Run` (batch), now a step of `tools/ci.sh` / `ci.ps1`.
+- *Decisions:* **UI Toolkit** for the HUD (decided 2026-10-13), built in code with a USS stylesheet, 1280x720 reference matched on height; input reaches it through an EventSystem with the Input System UI Input Module. Rooms: living room, kitchen, nursery, parents' bedroom, bathroom, home-office corner and entrance, all open (unlocking comes with levels). Walking costs game time: the clock keeps running while the parent walks (9 m/s, 25% slower at Energy 20 or below, on top of M1's slower actions).
+- *Rule choices the design left open:* the baby is either in the parent's arms or at a safe spot (crib, bouncer, play mat); it starts the day in the bouncer. Baby actions pick the baby up first and walk to the nearest suitable furniture (feeds: sofa, nursing chair, bed; change: changing table; sleep: crib; play: play mat); burp and soothe happen in place. After feeding, burping, changing or soothing, the parent keeps holding the baby. **Eat, prepare bottle, rest and sleep need free hands** ("Put the baby down first"): this also keeps the safe-sleep rule (no dozing with the baby on a sofa or bed). Moving off while doing something stops it, except soothing while carrying (walking is a soothing method). Feeding actions ruled out by the feeding choice are hidden rather than greyed out. Bathroom and office furniture are props until bathing, showering and work arrive.
+- *Controls:* tap/click floor walks; tap baby, furniture or yourself opens the radial menu (greyed-out entries show the reason); pinch or scroll zooms; two-finger twist, right-drag or Q/E rotate in 90° steps; Space or the Pause button pauses. Pause also holds developer options (speed, month, feeding, restart) until M3. Tapping the "Crying!" edge indicator opens the baby's menu. Phone button orders supplies.
+- *HUD:* need icons are circle (calm), triangle (rising) and square (urgent or crying) as well as green, amber and red; burp and boredom icons appear only when relevant. Joy is a glow around the "You" portrait. Edge indicators for off-screen crying and for deliveries at the front door. Golden Moments, album button and objective/star display come with M3-M4.
+- *Readability fix (2026-10-13, after a first look):* the HUD panel cleared the screen, so the 3-D view rendered black under it (an EditMode test now guards this). Added name tags over furniture, a yellow "Baby" tag (red "Baby: crying!") and a blue "You" tag, coloured floor rings under the parent (blue) and baby (yellow, red while crying), and a larger baby.
+- *First playtest (2026-10-13):* too hard: the day failed on the crying budget. Walking was the hidden cost: a typical trip is about 9 m, and calming a crying baby often takes two trips. At 4.5 m/s and 2 in-game minutes per second, that added about 8 crying minutes per episode, which the M1 balance bots (no walking) never paid. The walking speed is doubled to 9 m/s. The newborn crying budget is raised from 140 (M1) to **180** in-game minutes. So that the balance simulator still reflects the house, the Sloppy bot now adds 2 in-game minutes of walking (one typical trip) to each reaction to crying. 500 seeded runs: Greedy 99.6% (formula 100%), Sloppy 78% (formula 60%), Idle 0%, all within targets. A 3-minute walking cost would put formula Sloppy below 50%.
+- *Tests:* PlayMode tests cover paths to and walks to every piece of furniture; every furniture, baby and parent radial entry and every phone order triggering its command (all three feeding choices); hands-free greying; simulated mouse and touch taps (including tapping a radial button), pinch, twist, scroll and right-drag; HUD clock, need shapes, edge indicators and end-of-day panel; cause hints. EditMode: house scene first in the build, HUD panel settings.
+- *Deferred:* real walk/sit/sleep animations (procedural poses only); wall fading when walls hide the parent; pick-up/carrying effects in the simulation (carrying is visual; Soothe already drains more Energy); build sizes not yet compared with the baseline (needs the CI run).
+
 ---
 
 ### M3 - Level framework, outcomes and saving
@@ -365,7 +376,7 @@ These start after the base game is released. L2 depends on L1; L3 is independent
 | Before | Decision |
 |---|---|
 | M0 | ✅ Resolved: Unity 6000.3.25f1 pinned; local scripts only, no CI service. |
-| M2 | UI technology: UI Toolkit (proposed) or uGUI. |
+| M2 | ✅ Resolved: UI Toolkit. |
 | M6 | Reference Android device for performance; web build-size budget; who the consultant is; where to recruit playtesters. |
 | M11 | Languages for localization. |
 | L1 | Partner look and voice direction. |

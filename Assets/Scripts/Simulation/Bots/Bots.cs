@@ -103,13 +103,15 @@ namespace BabyChampion.Simulation
 
     /// <summary>
     /// A distracted parent: reacts only once the baby cries, and late; sometimes soothes when
-    /// something else is needed; often forgets to burp; restocks only when nearly out.
+    /// something else is needed; often forgets to burp; restocks only when nearly out. Each reaction
+    /// to crying also pays the walking a player does in the house (to the baby, then to the furniture).
     /// </summary>
     public sealed class SloppyBot : BotController
     {
         readonly SeededRandom _random;
         readonly int _minDelay;
         readonly int _maxDelay;
+        readonly double _walkMinutes;
         double _reactAt = -1;
         double _mistakeUntil = -1;
         bool _willBurp;
@@ -119,8 +121,11 @@ namespace BabyChampion.Simulation
         readonly double _attention;
 
         /// <param name="attention">Chance per idle minute of noticing a need before the baby cries.</param>
-        public SloppyBot(int seed, int minDelay = 1, int maxDelay = 5, double attention = 0.25)
+        /// <param name="walkMinutes">In-game minutes of walking added to each reaction to crying
+        /// (a typical trip of about 9 m takes 1 s at 9 m/s, which is 2 in-game minutes).</param>
+        public SloppyBot(int seed, int minDelay = 1, int maxDelay = 5, double attention = 0.25, double walkMinutes = 2)
         {
+            _walkMinutes = walkMinutes;
             _random = new SeededRandom(seed);
             _minDelay = minDelay;
             _maxDelay = maxDelay;
@@ -135,7 +140,7 @@ namespace BabyChampion.Simulation
 
             if (b.Crying && !_wasCrying)
             {
-                _reactAt = now + _random.Range(_minDelay, _maxDelay + 1);
+                _reactAt = now + _random.Range(_minDelay, _maxDelay + 1) + _walkMinutes;
                 _mistakeUntil = _random.NextDouble() < 0.2 ? _reactAt + 5 : -1;
             }
             _wasCrying = b.Crying;

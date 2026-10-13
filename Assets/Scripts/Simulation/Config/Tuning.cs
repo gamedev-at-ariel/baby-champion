@@ -100,7 +100,7 @@ namespace BabyChampion.Simulation
         public int maxBottlesReady = 2;
 
         // Failure (Section 13.2)
-        public double cryingBudgetMinutes = 140;
+        public double cryingBudgetMinutes = 180;
         public double maxContinuousCryMinutes = 30;
 
         public DayStart start = new DayStart();
