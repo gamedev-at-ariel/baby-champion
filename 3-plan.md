@@ -77,7 +77,7 @@ Rules:
 
 ---
 
-### M1 - Simulation core (headless)
+### M1 - Simulation core (headless) ✅ Done (2026-10-13, v0.2.0)
 **Goal:** the rules of design Section 7 work and are measurable, with no graphics.
 
 **Scope**
