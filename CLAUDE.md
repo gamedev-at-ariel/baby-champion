@@ -1,13 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. It is read automatically at the start of any session.
 
-## Current state
-
-Milestone **M0 (project foundation and pipeline) is done** — v0.1.0, see `version.txt`.
-**M1 (simulation core, headless) is implemented and awaiting the user's playtest.** The milestone
-plan is `3-plan.md`; each milestone there has a *Notes* block (decisions, deviations, deferred
-items) worth reading first.
+The milestone plan is `3-plan.md`; each milestone there has a *Notes* block (decisions, deviations, deferred items) worth reading first. Implemented milestones are ticked.
 
 Layout:
 - `Assets/Scripts/Simulation` — pure C# rules, assembly `BabyChampion.Simulation`, **no UnityEngine
@@ -28,19 +23,14 @@ Layout:
 - `tools/` — `unity.sh`/`unity.ps1` (batch-mode wrapper) and `ci.sh`/`ci.ps1` (full pipeline).
 - `docs/cli-setup.md` — machine setup and CLI commands; `docs/build-size-baseline.md` — size baseline.
 
-Purpose (from README): *"Be a champion parent! For demonstrating game-development via Unity CLI
-and Claude Code."* The Unity CLI is the point of this repo, not an incidental tool — prefer it
-over hand-editing scene/asset YAML or launching the GUI.
-
 ## The `unity` CLI
 
-`unity` (v1.0.0-beta.12) is on PATH. It installs editors, creates projects, builds, tests, and —
+The Unity CLI is the point of this repo, not an incidental tool — prefer it over hand-editing scene/asset YAML or launching the GUI.
+
+`unity` is on PATH. It installs editors, creates projects, builds, tests, and —
 most importantly — **drives a running Editor live**.
 
-**Read the bundled agent skill before doing non-trivial work:** `unity skill show` prints a
-task-oriented guide (~630 lines); `unity skill show --list` lists its reference files and
-`unity skill show --path <file>` prints one. It covers the Play-mode verification loop, targeting
-one of several Editors, and Safe Mode recovery — details not repeated here.
+**Read the bundled agent skill before doing non-trivial work:** `unity skill show` prints a task-oriented guide (~630 lines); `unity skill show --list` lists its reference files and `unity skill show --path <file>` prints one. It covers the Play-mode verification loop, targeting one of several Editors, and Safe Mode recovery — details not repeated here.
 
 ```bash
 unity templates list                      # template IDs for an editor version
@@ -164,9 +154,7 @@ on failure.
 3. For gameplay changes: enter Play mode via eval, check the state you expect, report it, and exit Play mode.
 4. Summarize what changed and what I should playtest by hand.
 
-When a milestone is finished, also run its *CLI verification* list from 3-plan.md (normally a green
-`tools/ci.sh` with the Editor closed — ask me before closing it), then mark it ✅ in 3-plan.md
-with the date and version and add a *Notes* block (decisions, deviations, deferred), as for M0.
+When a milestone is finished, also run its *CLI verification* list from 3-plan.md (normally a green `tools/ci.sh` with the Editor closed — ask me before closing it), then mark it ✅ in 3-plan.md with the date and version and add a *Notes* block (decisions, deviations, deferred).
 
 ## Rules
 - Work on one milestone from 3-plan.md at a time. Don't start the next one unasked.

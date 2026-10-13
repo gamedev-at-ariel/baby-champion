@@ -25,6 +25,9 @@ function Fail($text) { Write-Host "CI FAILED: $text" -ForegroundColor Red; exit 
 
 function Invoke-Unity($name, [string[]]$unityArgs) {
     $log = "artifacts/logs/$name.log"
+    # Windows PowerShell turns any native stderr line (e.g. "debugger-agent: Unable to listen on 3456")
+    # into a terminating error under 'Stop'; the exit code and log checks decide success instead.
+    $ErrorActionPreference = 'Continue'
     & powershell -NoProfile -ExecutionPolicy Bypass -File $Unity @unityArgs *> $log
     $code = $LASTEXITCODE
     Write-Host "${name}: exit code $code (log: $log)"

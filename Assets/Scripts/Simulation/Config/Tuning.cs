@@ -65,8 +65,8 @@ namespace BabyChampion.Simulation
         public double energyDrainAwake = 0.1;
         public double cryingEnergyMultiplier = 2;
         public double carryingEnergyMultiplier = 1.5;
-        public double energySleepRecovery = 0.1;
-        public double energyRestRecovery = 0.08;
+        public double energySleepRecovery = 0.2;
+        public double energyRestRecovery = 0.12;
         public double lowEnergyThreshold = 20;
         public double lowEnergyDurationMultiplier = 1.25;
         public double parentHungerTo70Minutes = 300;
