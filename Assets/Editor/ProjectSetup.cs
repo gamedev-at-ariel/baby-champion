@@ -233,7 +233,7 @@ namespace BabyChampion.Editor
             }
         }
 
-        static Material EnsureMaterial(string name, Color color)
+        internal static Material EnsureMaterial(string name, Color color)
         {
             string path = $"{MaterialsFolder}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);

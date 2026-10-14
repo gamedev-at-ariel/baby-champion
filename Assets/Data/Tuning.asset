@@ -46,8 +46,8 @@ MonoBehaviour:
     energyDrainAwake: 0.1
     cryingEnergyMultiplier: 2
     carryingEnergyMultiplier: 1.5
-    energySleepRecovery: 0.1
-    energyRestRecovery: 0.08
+    energySleepRecovery: 0.2
+    energyRestRecovery: 0.12
     lowEnergyThreshold: 20
     lowEnergyDurationMultiplier: 1.25
     parentHungerTo70Minutes: 300
@@ -77,7 +77,7 @@ MonoBehaviour:
     minBabyHungerToFeed: 20
     minParentHungerToEat: 10
     maxBottlesReady: 2
-    cryingBudgetMinutes: 140
+    cryingBudgetMinutes: 180
     maxContinuousCryMinutes: 30
     start:
       babyHunger: 30

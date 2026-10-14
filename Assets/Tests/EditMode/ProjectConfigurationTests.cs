@@ -37,11 +37,25 @@ namespace BabyChampion.Tests.EditMode
         }
 
         [Test]
-        public void DebugDayScene_IsTheFirstBuildScene_AndTestSceneIsIncluded()
+        public void HouseScene_IsTheFirstBuildScene_AndTheOthersAreIncluded()
         {
-            Assert.That(EditorBuildSettings.scenes.Length, Is.GreaterThan(1));
-            Assert.AreEqual(DebugDaySetup.ScenePath, EditorBuildSettings.scenes[0].path);
-            CollectionAssert.Contains(EditorBuildSettings.scenes.Select(s => s.path).ToList(), ProjectSetup.TestScenePath);
+            Assert.That(EditorBuildSettings.scenes.Length, Is.GreaterThan(2));
+            Assert.AreEqual(HouseSetup.ScenePath, EditorBuildSettings.scenes[0].path);
+            var paths = EditorBuildSettings.scenes.Select(s => s.path).ToList();
+            CollectionAssert.Contains(paths, DebugDaySetup.ScenePath);
+            CollectionAssert.Contains(paths, ProjectSetup.TestScenePath);
+        }
+
+        [Test]
+        public void HouseUi_UsesTheInputSystemUiModule_AndScalesWithTheScreen()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.PanelSettings>(HouseSetup.PanelSettingsPath);
+            Assert.IsNotNull(settings, "no HUD panel settings");
+            Assert.IsNotNull(settings.themeStyleSheet, "the HUD panel has no theme");
+            Assert.AreEqual(UnityEngine.UIElements.PanelScaleMode.ScaleWithScreenSize, settings.scaleMode);
+            Assert.IsNull(settings.targetTexture, "the HUD panel was left rendering into a texture (screenshot tool)");
+            Assert.IsFalse(settings.clearColor, "an overlay panel that clears the screen hides the 3-D view (renders black)");
+            StringAssert.Contains("InputSystemUIInputModule", File.ReadAllText(HouseSetup.ScenePath));
         }
 
         [Test]

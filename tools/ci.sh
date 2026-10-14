@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Full command-line check, in order, stopping at the first failure:
-#   EditMode tests -> PlayMode tests -> data validation -> balance simulator -> Web build -> Android build -> build sizes
+#   EditMode tests -> PlayMode tests -> data validation -> balance simulator -> screenshots -> Web build -> Android build -> build sizes
 #
 # Usage: tools/ci.sh [--release] [--web-dev] [--skip-builds] [--verify-build-failure]
 #   (default)               build Web Release (the one for itch.io) and Android Dev (APK)
@@ -97,6 +97,12 @@ for feeding in both formula; do
   run_unity "balance-$feeding" -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level 1 -bot all -runs 500 -seed 1 -feeding "$feeding" || fail "balance targets ($feeding; see artifacts/balance/)"
   grep "\[BalanceSim\]" "artifacts/logs/balance-$feeding.log" | sed 's/^.*\[BalanceSim\] //' | sort -u
 done
+
+# Every room, the HUD, the radial menu and the phone at phone and desktop resolutions, for review.
+# Needs graphics and enters Play mode, so no -nographics and no -quit: the tool exits by itself.
+step "Screenshots"
+run_unity screenshots -executeMethod BabyChampion.Editor.ScreenshotTool.Run || fail "screenshots (see artifacts/logs/screenshots.log)"
+grep "\[Screenshots\]" artifacts/logs/screenshots.log | sed 's/^.*\[Screenshots\] //' | sort -u
 
 if [[ $SKIP_BUILDS == 1 ]]; then echo; echo "CI PASSED (builds skipped)"; exit 0; fi
 

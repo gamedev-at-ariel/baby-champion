@@ -36,6 +36,27 @@ namespace BabyChampion.Tests.EditMode
             Expect("eatMinutes");
         }
 
+        /// <summary>Greedy care, but the parent never sleeps or rests.</summary>
+        sealed class SleeplessBot : IParentController
+        {
+            readonly GreedyBot _greedy = new GreedyBot();
+
+            public ParentCommand Decide(CareSimulation sim)
+            {
+                var command = _greedy.Decide(sim);
+                return command != null && (command.type == ActionType.Sleep || command.type == ActionType.Rest) ? null : command;
+            }
+        }
+
+        [Test]
+        public void ProjectData_ADayWithoutSleep_ExhaustsTheParent([Values(1, 2, 3)] int seed)
+        {
+            var sim = CareSimulation.NewDay(DataAssets.LoadConfig(), 0, FeedingChoice.Both, seed);
+            sim.AttachController(new SleeplessBot());
+            sim.RunToEnd();
+            Assert.AreEqual(FailReason.ParentCollapsed, sim.FailReason, $"outcome {sim.Outcome} at minute {sim.Minute}");
+        }
+
         [Test]
         public void ProjectDataAssets_ExistAndAreValid()
         {
