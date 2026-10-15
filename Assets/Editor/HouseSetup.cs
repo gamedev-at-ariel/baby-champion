@@ -18,9 +18,9 @@ using UnityEngine.UIElements;
 namespace BabyChampion.Editor
 {
     /// <summary>
-    /// Builds the M2 greybox house scene from primitives: the rooms of design Section 12, furniture
-    /// that offers actions, the placeholder parent and baby, camera, HUD and a baked NavMesh.
-    /// Re-run it after changing the layout: <c>unity command bc_setup_house</c>.
+    /// Builds the greybox house scene from primitives: the rooms of design Section 12, furniture
+    /// that offers actions, the placeholder parent, baby and grandparent, camera, HUD and a baked
+    /// NavMesh. Re-run it after changing the layout: <c>unity command bc_setup_house</c>.
     /// </summary>
     public static class HouseSetup
     {
@@ -37,12 +37,13 @@ namespace BabyChampion.Editor
 
         static Transform _house;
 
-        [CliCommand("bc_setup_house", "(Re)create the M2 greybox house scene (rooms, furniture, parent, baby, camera, HUD, NavMesh) and make it the first build scene")]
+        [CliCommand("bc_setup_house", "(Re)create the greybox house scene (rooms, furniture, parent, baby, grandparent, camera, HUD, NavMesh) and add it to the build")]
         public static string SetupHouse()
         {
             DataAssets.SetupData();
-            var panelSettings = EnsurePanelSettings();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            // After NewScene: opening a new scene unloads assets nothing references.
+            var panelSettings = EnsurePanelSettings();
 
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.62f, 0.6f, 0.58f);
@@ -71,6 +72,7 @@ namespace BabyChampion.Editor
             parentStart.SetPositionAndRotation(new Vector3(-0.2f, 0f, -3.6f), Quaternion.Euler(0, 0, 0));
             var parent = BuildParent(parentStart.position);
             var baby = BuildBaby();
+            var helper = BuildHelper();
 
             var cameraGo = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
             cameraGo.tag = "MainCamera";
@@ -87,6 +89,8 @@ namespace BabyChampion.Editor
             Set(game, "ageRates", DataAssets.AgeRates);
             Set(game, "prices", DataAssets.Prices);
             Set(game, "tuning", DataAssets.Tuning);
+            Set(game, "levels", DataAssets.Levels);
+            Set(game, "helper", helper);
             Set(game, "parent", parent);
             Set(game, "baby", baby);
             Set(game, "startBabySpot", furniture["Bouncer"]);
@@ -126,11 +130,11 @@ namespace BabyChampion.Editor
 
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             EditorSceneManager.SaveScene(scene, ScenePath);
-            ProjectSetup.AddBuildScene(ScenePath, first: true);
+            ProjectSetup.AddBuildScene(ScenePath);
             AssetDatabase.SaveAssets();
 
             var tri = NavMesh.CalculateTriangulation();
-            return $"house: saved {ScenePath} (first build scene); {rooms.Count} rooms, {furniture.Count} pieces of furniture, NavMesh {tri.vertices.Length} vertices";
+            return $"house: saved {ScenePath} (in the build); {rooms.Count} rooms, {furniture.Count} pieces of furniture, NavMesh {tri.vertices.Length} vertices";
         }
 
         // ---------------------------------------------------------------- UI assets
@@ -439,7 +443,7 @@ namespace BabyChampion.Editor
             var onesie = new Color(0.98f, 0.9f, 0.5f);
             var skin = new Color(1f, 0.82f, 0.68f);
             var dark = new Color(0.18f, 0.1f, 0.1f);
-            Primitive(PrimitiveType.Capsule, "Torso", body, new Vector3(0, 0.18f, 0), new Vector3(0.22f, 0.18f, 0.2f), "Onesie", onesie);
+            var torso = Primitive(PrimitiveType.Capsule, "Torso", body, new Vector3(0, 0.18f, 0), new Vector3(0.22f, 0.18f, 0.2f), "Onesie", onesie);
             var head = Primitive(PrimitiveType.Sphere, "Head", body, new Vector3(0, 0.42f, 0), Vector3.one * 0.25f, "BabySkin", skin);
             var mouth = Primitive(PrimitiveType.Sphere, "Mouth", body, new Vector3(0, 0.375f, 0.115f), new Vector3(0.07f, 0.03f, 0.03f), "BabyDark", dark);
             Primitive(PrimitiveType.Sphere, "EyeL", body, new Vector3(-0.05f, 0.45f, 0.11f), Vector3.one * 0.035f, "BabyDark", dark);
@@ -462,11 +466,31 @@ namespace BabyChampion.Editor
             Set(avatar, "ring", ring.GetComponent<Renderer>());
             Set(avatar, "body", body);
             Set(avatar, "head", head.GetComponent<Renderer>());
+            Set(avatar, "torso", torso.GetComponent<Renderer>());
             Set(avatar, "mouth", mouth.transform);
             Set(avatar, "leftHand", left.transform);
             Set(avatar, "rightHand", right.transform);
             SetArray(avatar, "tears", tears);
             SetArray(avatar, "sleepBubbles", bubbles);
+            return avatar;
+        }
+
+        /// <summary>The grandparent of a Call for help: hidden until called.</summary>
+        static HelperAvatar BuildHelper()
+        {
+            var root = new GameObject("Grandma");
+            var body = new GameObject("Body").transform;
+            body.SetParent(root.transform, false);
+            var cardigan = new Color(0.62f, 0.45f, 0.72f);
+            var skin = new Color(0.93f, 0.78f, 0.68f);
+            Primitive(PrimitiveType.Capsule, "Torso", body, new Vector3(0, 0.72f, 0), new Vector3(0.5f, 0.72f, 0.5f), "Grandma", cardigan);
+            Primitive(PrimitiveType.Sphere, "Head", body, new Vector3(0, 1.6f, 0), Vector3.one * 0.38f, "GrandmaSkin", skin);
+            Primitive(PrimitiveType.Sphere, "Hair", body, new Vector3(0, 1.72f, -0.05f), new Vector3(0.42f, 0.3f, 0.4f), "GrandmaHair", new Color(0.9f, 0.9f, 0.92f));
+            Primitive(PrimitiveType.Cube, "Nose", body, new Vector3(0, 1.6f, 0.19f), Vector3.one * 0.07f, "GrandmaSkin", skin);
+            Primitive(PrimitiveType.Cylinder, "Ring", root.transform, new Vector3(0, 0.02f, 0), new Vector3(0.9f, 0.01f, 0.9f), "GrandmaRing", new Color(0.62f, 0.4f, 0.8f));
+            var avatar = root.AddComponent<HelperAvatar>();
+            Set(avatar, "body", body);
+            root.SetActive(false);
             return avatar;
         }
 

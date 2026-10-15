@@ -68,7 +68,7 @@ namespace BabyChampion.Tests.PlayMode
 
             foreach (ActionType type in System.Enum.GetValues(typeof(ActionType)))
             {
-                if (type == ActionType.Stop || type == ActionType.OrderSupplies) continue; // HUD: Stop button and phone
+                if (type == ActionType.Stop || type == ActionType.OrderSupplies || type == ActionType.CallForHelp) continue; // HUD: Stop button and phone
                 Assert.IsTrue(offered.Contains(type), $"{type} is not offered anywhere in the house");
                 var info = ActionCatalog.For(type);
                 if (info.AtStation)

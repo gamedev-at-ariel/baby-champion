@@ -19,6 +19,8 @@ namespace BabyChampion.Simulation
             else ValidatePrices(config.prices, errors);
             if (config.tuning == null) errors.Add("Tuning: missing");
             else ValidateTuning(config.tuning, errors);
+            if (config.levels == null) errors.Add("Levels: missing");
+            else ValidateLevels(config.levels, errors);
             return errors;
         }
 
@@ -108,6 +110,105 @@ namespace BabyChampion.Simulation
                 else if (value is int i && i < 0) errors.Add($"Tuning start: {field.Name} = {i} must not be negative");
             }
             if (start.parentEnergy <= 0) errors.Add("Tuning start: parentEnergy must be positive");
+        }
+
+        static void ValidateLevels(LevelTable table, List<string> errors)
+        {
+            int last = LevelTable.LastLevel;
+            if (table.chapters == null || table.chapters.Count == 0) errors.Add("Levels: no chapters");
+            else
+            {
+                for (int i = 0; i < table.chapters.Count; i++)
+                {
+                    var c = table.chapters[i];
+                    string label = $"Chapter {c.number}";
+                    if (c.number != i + 1) errors.Add($"{label}: chapters must be numbered 1, 2, 3... in order");
+                    if (string.IsNullOrWhiteSpace(c.title)) errors.Add($"{label}: has no title");
+                    if (c.firstLevel < 1 || c.lastLevel > last || c.firstLevel > c.lastLevel)
+                        errors.Add($"{label}: level range {c.firstLevel}-{c.lastLevel} is not within 1-{last}");
+                }
+                for (int level = 1; level <= last; level++)
+                {
+                    int covering = table.chapters.Count(c => c.Contains(level));
+                    if (covering != 1) errors.Add($"Levels: level {level} is in {covering} chapters (must be exactly 1)");
+                }
+            }
+
+            if (table.levels == null || table.levels.Count == 0)
+            {
+                errors.Add("Levels: no levels");
+                return;
+            }
+            foreach (var group in table.levels.GroupBy(l => l.number).Where(g => g.Count() > 1))
+                errors.Add($"Levels: {group.Count()} definitions of level {group.Key}");
+            foreach (var level in table.levels) ValidateLevel(level, errors);
+        }
+
+        static void ValidateLevel(LevelDefinition level, List<string> errors)
+        {
+            string label = $"Level {level.number}";
+            if (level.number < 1 || level.number > LevelTable.LastLevel) errors.Add($"{label}: number is not within 1-{LevelTable.LastLevel}");
+            if (string.IsNullOrWhiteSpace(level.title)) errors.Add($"{label}: has no title");
+            if (string.IsNullOrWhiteSpace(level.objective)) errors.Add($"{label}: has no objective text");
+            if (string.IsNullOrWhiteSpace(level.briefing)) errors.Add($"{label}: has no briefing");
+            if (level.month != level.number - 1) errors.Add($"{label}: month {level.month} should be {level.number - 1} (level N is the baby's N-th month)");
+            if (level.startHour < 0 || level.startHour > 23) errors.Add($"{label}: startHour {level.startHour} is not an hour");
+            CheckRange(errors, label, "lengthMinutes", level.lengthMinutes, 30, 1440 * 2);
+            CheckRange(errors, label, "cryingBudgetMinutes", level.cryingBudgetMinutes, 1, level.lengthMinutes);
+            CheckRange(errors, label, "maxContinuousCryMinutes", level.maxContinuousCryMinutes, 1, level.lengthMinutes);
+            if (level.allowance < 0) errors.Add($"{label}: negative allowance ({level.allowance})");
+            if (level.helpCalls < 0) errors.Add($"{label}: negative helpCalls ({level.helpCalls})");
+
+            var actions = level.actions ?? new List<ActionType>();
+            if (actions.Count == 0) errors.Add($"{label}: no available actions");
+            foreach (var action in actions)
+                if (!Enum.IsDefined(typeof(ActionType), action)) errors.Add($"{label}: action {(int)action} does not exist");
+            foreach (var group in actions.GroupBy(a => a).Where(g => g.Count() > 1))
+                errors.Add($"{label}: action {group.Key} is listed {group.Count()} times");
+            bool Has(ActionType type) => actions.Contains(type);
+            if ((Has(ActionType.Breastfeed) || Has(ActionType.BottleFeed))
+                && !(Has(ActionType.Breastfeed) && Has(ActionType.BottleFeed) && Has(ActionType.PrepareBottle)))
+                errors.Add($"{label}: feeding needs Breastfeed, PrepareBottle and BottleFeed, so every feeding choice works");
+            if (level.helpCalls > 0 && !Has(ActionType.CallForHelp)) errors.Add($"{label}: helpCalls is {level.helpCalls} but CallForHelp is not available");
+            if (level.helpCalls == 0 && Has(ActionType.CallForHelp)) errors.Add($"{label}: CallForHelp is available but helpCalls is 0");
+
+            foreach (var goal in level.goals ?? new List<LevelGoal>())
+            {
+                if (!Enum.IsDefined(typeof(GoalType), goal.type))
+                {
+                    errors.Add($"{label}: goal type {(int)goal.type} does not exist");
+                    continue;
+                }
+                if (string.IsNullOrWhiteSpace(goal.text)) errors.Add($"{label}: goal {goal.type} has no text");
+                if (goal.type == GoalType.EnergyAtEnd) CheckRange(errors, label, "EnergyAtEnd goal", goal.target, 0, 99);
+                else CheckRange(errors, label, $"{goal.type} goal", goal.target, 1, 100);
+                var needed = goal.type == GoalType.Feeds ? ActionType.Breastfeed
+                    : goal.type == GoalType.Burps ? ActionType.Burp
+                    : goal.type == GoalType.DiaperChanges ? ActionType.ChangeDiaper
+                    : goal.type == GoalType.BabyNaps ? ActionType.PutBabyToSleep
+                    : (ActionType?)null;
+                if (needed is ActionType a && !Has(a)) errors.Add($"{label}: goal {goal.type} needs action {a}, which is not available");
+            }
+
+            foreach (var condition in level.failConditions ?? new List<FailCondition>())
+            {
+                if (!Enum.IsDefined(typeof(FailConditionType), condition.type)) errors.Add($"{label}: fail condition {(int)condition.type} does not exist");
+                if (string.IsNullOrWhiteSpace(condition.text)) errors.Add($"{label}: fail condition {condition.type} has no text");
+                if (condition.type == FailConditionType.EnergyAtOrBelow) CheckRange(errors, label, "EnergyAtOrBelow", condition.value, 0, 99);
+            }
+
+            var stars = level.stars;
+            if (stars == null) errors.Add($"{label}: no star rules");
+            else
+            {
+                CheckRange(errors, label, "twoStarWellbeing", stars.twoStarWellbeing, 0, 100);
+                CheckRange(errors, label, "threeStarJoy", stars.threeStarJoy, 0, 100);
+                if (stars.helpStarCap < 0 || stars.helpStarCap > 3) errors.Add($"{label}: helpStarCap {stars.helpStarCap} is not within 0-3");
+            }
+
+            if (level.start != null)
+                foreach (var field in typeof(LevelStart).GetFields())
+                    if (field.GetValue(level.start) is double d && d >= 0) CheckRange(errors, label + " start", field.Name, d, 0, 100);
         }
 
         static void CheckRange(List<string> errors, string label, string name, double value, double min, double max)

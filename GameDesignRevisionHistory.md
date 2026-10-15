@@ -6,6 +6,12 @@ Revision history of 2-design-detailed.md. Section numbers in each entry refer to
 
 ---
 
+## v0.5
+- **Night rules (new Section 7.5), introduced by Level 2.** Between 22:00 and 06:00, from Level 2 on: light and deep sleep; *stirring* (a sleeping baby grunts and squirms, often resettles if left alone, and wakes fully if the parent goes in too soon); rocking to sleep in arms with a risky transfer in light sleep; grogginess after being woken; no deliveries at night.
+- **Level 2 (*Night Shift*) redesigned** (Section 14.3): starts at 20:30 with an evening to prepare (stock up, prepare bottles, *Bedtime prep*, bassinet by the bed), parent starts at Energy 30. Objective changed from "Energy above 20 at 07:00" to "at least 3 night feeds and 5 hours of sleep". Reason: in the M3 balance runs the Energy goal never decided anything, and the level played like a shorter Level 1.
+- New procedures *Rock to sleep* and *Bedtime prep* (Section 9); bassinet in the parents' bedroom (Section 12); objectives can also measure hours slept (Section 13.1); room-sharing and drowsy-but-awake added to the safety guidelines (Section 16).
+- Time model: the sleep fast-forward drops to 1x while the baby stirs (Section 6).
+
 ## v0.4.1
 - **Builds use Unity 6 Build Profiles** with the built-in `-activeBuildProfile` and `-build` command-line arguments, replacing the planned custom build script (Section 19.3). Only a small pre-build hook remains, to stamp the version number.
 - Command-line calls go through a wrapper script, `tools/unity.sh`, which adds the common flags once. Exact commands moved to 3-plan.md, Section 2.

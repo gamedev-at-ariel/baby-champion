@@ -8,18 +8,23 @@ Layout:
 - `Assets/Scripts/Simulation` — pure C# rules, assembly `BabyChampion.Simulation`, **no UnityEngine
   reference** (an editor test enforces this). The day simulation is `CareSimulation` (not
   `Simulation`, which would clash with the namespace); data classes `AgeRateTable`, `PriceList`,
-  `Tuning`; saves and data export use its own `JsonCodec`; test bots and `BalanceRunner` in `Bots/`.
+  `Tuning`; levels in `Levels/` (`LevelTable`, `LevelDefinition`, `LevelScoring`); save slots in
+  `Progress/` (`SaveSlot`, `Household`); saves and data export use its own `JsonCodec`; test bots
+  and `BalanceRunner` in `Bots/`.
 - `Assets/Scripts/Game` — Unity-side game code (`BabyChampion.Game`): data-asset wrappers
   (`Data/`), the M1 debug scene runner (`DebugDay/`) and the M2 house (`House/`: `HouseGame` owns
   the day and routes taps into walking, carrying and commands; `Hud` is UI Toolkit; `PointerInput`,
-  `CameraRig`, avatars, `ScreenshotCapture`). The house scene is built by `bc_setup_house`.
-- `Assets/UI` — HUD stylesheet (`Hud.uss`), runtime theme and panel settings.
-- `Assets/Data` — the tuning data (`AgeRates`, `Prices`, `Tuning` assets). Change values through
+  `CameraRig`, avatars, `TutorialCoach`, `ScreenshotCapture`). The house scene is built by
+  `bc_setup_house`. `Menu/MenuScreens` is the Menu scene (title, slots, baby setup, level map),
+  built by `bc_setup_menu` and first in the build; `Progress/` holds `SaveStore` (3 slots) and
+  `GameSession` (hands the slot and level from the menu to the house).
+- `Assets/UI` — stylesheets (`Hud.uss`, `Menu.uss`), runtime theme and panel settings.
+- `Assets/Data` — the tuning data (`AgeRates`, `Prices`, `Tuning`, `Levels` assets). Change values through
   `bc_import_data` or eval, never by editing the `.asset` YAML.
 - `Assets/Editor` — editor tools and `[CliCommand]`s (`BabyChampion.Editor`): `ProjectSetup.cs`
   (`bc_setup_*`), `DataAssets.cs` (`bc_setup_data`, `bc_export_data`, `bc_import_data`),
   `BalanceSim.cs` (`bc_balance_sim`), `DebugDaySetup.cs` (`bc_setup_debug_scene`),
-  `HouseSetup.cs` (`bc_setup_house`), `ScreenshotTool.cs` (`bc_screenshots`),
+  `HouseSetup.cs` (`bc_setup_house`), `MenuSetup.cs` (`bc_setup_menu`), `ScreenshotTool.cs` (`bc_screenshots`),
   `DataValidator.cs` (`bc_validate_data`), `VersionStamp.cs`, `AndroidBuildEnvironment.cs`,
   `BuildFailureProbe.cs`.
 - `Assets/Tests/{EditMode,PlayMode}` — test assemblies.

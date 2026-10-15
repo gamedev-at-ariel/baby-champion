@@ -19,6 +19,8 @@ namespace BabyChampion.Simulation
         Rest,
         Sleep,
         OrderSupplies,
+        /// <summary>A grandparent looks after the baby for a while; once per level; caps the stars (design Section 9).</summary>
+        CallForHelp,
     }
 
     /// <summary>A request from a parent controller to start an action.</summary>

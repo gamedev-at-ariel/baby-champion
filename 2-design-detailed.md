@@ -1,4 +1,4 @@
-# Baby Champion - Game Design - Detailed (v0.4.1)
+# Baby Champion - Game Design - Detailed (v0.5)
 
 All numbers in this document are **initial tuning values for playtesting**, not final balance.
 
@@ -60,7 +60,7 @@ Between levels, a **Milestone card** celebrates what the baby can do now ("Now I
 ## 6. Time model
 
 - A **day level** covers one in-game day, 07:00 to 07:00. Default compression: **1 real second = 2 in-game minutes** (~12 real minutes per day).
-- While the parent sleeps, time runs **4x faster** until something wakes them.
+- While the parent sleeps, time runs **4x faster** until something wakes them. At night, it drops back to 1x while the baby *stirs* (Section 7.5), so the player can decide whether to get up.
 - A **scene level** covers one situation (a meal, a bath, a chase) and lasts 2-5 real minutes.
 - The game can be paused at any time.
 
@@ -108,6 +108,27 @@ Feeds, diaper changes and meals consume supplies. If one is out, the action is u
 | 24-36 mo | 3 meals + 2 snacks | ~4 h | 5-6 h, one nap | potty training |
 
 To be verified by the consultant (Section 16).
+
+### 7.5 Night rules (from Level 2)
+
+Night rules apply between 22:00 and 06:00 in every level from Level 2 on. Level 2 (*Night Shift*) introduces them; Level 1 keeps the simpler day rules.
+
+**Sleep depth.** A sleeping baby is in **light** or **deep** sleep. After falling asleep the baby sleeps lightly for ~15 in-game minutes, then deeply. Sleep runs in cycles of ~45 minutes (newborn); each cycle ends with a few minutes of light sleep. The baby's body shows the depth: light sleep = fluttering eyes, clenched fists; deep sleep = slow breathing, limp arms.
+
+**Stirring.** At night, a baby in light sleep may **stir**: grunts, squirms, a short whimper. Stirring is not crying (it does not count towards the crying budget) and it does not wake the parent, but the sleep fast-forward drops to 1x and a "?" bubble appears over the baby.
+- **Left alone**, a stirring baby with no real need settles back to sleep within ~5 minutes in most cases (initial tuning: 70%); otherwise they wake and cry.
+- A **real need** (Hunger at the crying threshold, a dirty diaper, gas) turns stirring into crying after ~3 minutes.
+- **Going in** (picking up, changing, soothing) wakes a stirring baby fully: they are awake and must be settled again.
+- The lesson is real advice: babies are noisy sleepers; pause and listen before going in.
+
+**Two ways to settle the baby.**
+- **Put to sleep in the crib** (drowsy but awake): works only when Tension is below 50; the baby falls asleep in the crib, so there is nothing to transfer.
+- **Rock to sleep in arms**: works up to Tension 75 and is faster, but the baby falls asleep in the parent's arms.
+- **Transfer:** putting a baby who sleeps in your arms down into the crib or bassinet while they are in light sleep wakes them (initial tuning: 70%). In deep sleep the transfer is safe. Waiting for the limp-arms sign costs time, but holding a sleeping baby is also one of the sweetest moments of the night (Level 2's signature Golden Moment).
+
+**Grogginess.** A parent woken from sleep is **groggy** for 10 in-game minutes: walking is 30% slower and timed actions take 25% longer (on top of the low-Energy penalty). Every needless trip at night costs sleep twice.
+
+**No deliveries at night.** Orders placed between 22:00 and 07:00 arrive at 07:00; express delivery is unavailable. What the night needs must be in the house before bedtime.
 
 ---
 
@@ -170,7 +191,9 @@ All actions are triggered by click / touch (Section 15).
 | **Burp** | Anywhere | Just fed | Prevents gas. | 3-5 min |
 | **Spoon-feed** (month 7+) | High chair | Baby food | Skill mini-game. | 10-20 min |
 | **Change diaper** | Changing table | Diaper, wipes | Diaper to Clean. From month 5, one hand stays on the baby. | 5 min |
-| **Put baby to sleep** | Crib | Tension below 50 | Baby sleeps. | 5-15 min |
+| **Put baby to sleep** | Crib, bassinet | Tension below 50 | Baby falls asleep in the crib (drowsy but awake). | 5-15 min |
+| **Rock to sleep** | Anywhere | Tension below 75 | Baby falls asleep in your arms; putting them down in light sleep may wake them (Section 7.5). | 5-10 min |
+| **Bedtime prep** | Parents' bedroom | Diapers, wipes | Moves a night caddy (diapers, wipes) to the bedroom: changes can be done there for the night. | 3 min |
 | **Soothe** (rock, sing, walk, white noise, pacifier) | Anywhere | - | Lowers Tension; each baby has a favorite method. | continuous |
 | **Play** (mini-games, Section 8.3) | Play mat, living room | Baby awake | Lowers Boredom; raises Joy. | 5-15 min |
 | **Enjoy** | Near the baby | Golden Moment active | Photo to Album; big Joy boost. | 2 min |
@@ -180,7 +203,7 @@ All actions are triggered by click / touch (Section 15).
 | **Sleep / Rest** | Bed / sofa | Stress below 60 | Restores Energy. | until woken |
 | **Shower** | Bathroom | Baby safe | Lowers Stress. | 10 min |
 | **Work** (month 6+) | Desk | Baby asleep or safely occupied | Earns money; drains Energy. | continuous |
-| **Order supplies** | Phone | Money | Delivery in 2 h (express 30 min, extra cost). | instant |
+| **Order supplies** | Phone | Money | Delivery in 2 h (express 30 min, extra cost). No deliveries 22:00-07:00 (Section 7.5). | instant |
 | **Babyproof** (month 8+) | Hazard spots | Safety items | Installs covers, gates, locks, anchors. | 5 min each |
 | **Step away** | Room with crib | Baby in crib | Leave for 5 min; Stress falls sharply. Teaches a real coping strategy for overwhelming crying. | 5 min |
 | **Call for help** | Phone | Once per level | Grandparent helps for 2 h; caps the level at 2 stars. | 2 h |
@@ -200,6 +223,7 @@ All actions are triggered by click / touch (Section 15).
 | **Energy, Stress, Joy** | Parent meters | Sections 7.2 and 8 |
 
 - Money and supplies carry over between levels; a retry restores start-of-level values.
+- Deliveries do not come at night (22:00-07:00); orders placed then arrive at 07:00.
 - Safety net: if the player cannot afford one day of essentials, grandparents send a gift (once per chapter).
 
 ---
@@ -215,7 +239,7 @@ All actions are triggered by click / touch (Section 15).
 
 ## 12. Boundaries
 
-- **The house:** living room, kitchen, nursery, parents' bedroom, bathroom, home-office corner, entrance. Rooms unlock as they become relevant.
+- **The house:** living room, kitchen, nursery, parents' bedroom, bathroom, home-office corner, entrance. Rooms unlock as they become relevant. From Level 2 the parents' bedroom has a **bassinet** next to the bed (room-sharing, Section 16), which shortens the night walks.
 - **Outside** (special levels): grocery store (23), playground (31), kindergarten (35-36).
 - The baby is never left alone in or outside the house.
 
@@ -224,7 +248,7 @@ All actions are triggered by click / touch (Section 15).
 ## 13. Outcomes
 
 ### 13.1 Level structure
-Primary objective + general care constraints + time limit (end of day, or a real-time limit for scene levels).
+Primary objective + general care constraints + time limit (end of day, or a real-time limit for scene levels). Objectives can count care actions (feeds, changes...), measure the parent (Energy at the end, hours slept) or be level-specific.
 
 ### 13.2 Failure conditions
 - Parent Energy reaches 0.
@@ -251,7 +275,7 @@ Restart from the level start with money and supplies restored.
 | Lvl | Age | Title | Type | Primary objective | Signature Golden Moment |
 |---|---|---|---|---|---|
 | 1 | 0-1 mo | First Day Home | M | Tutorial: feed, burp, change, sleep. Stay within the crying budget. | The baby grips your finger. |
-| 2 | 1-2 mo | Night Shift | M | Night feeds every 2-3 h; sleep between feeds. Reach morning with Energy above 20. | Asleep on your chest at 3 AM. |
+| 2 | 1-2 mo | Night Shift | M | Prepare for the night, then night feeds every 2-3 h. Sleep at least 5 hours by 07:00. New: stirring, light and deep sleep, grogginess *(14.3)*. | Asleep on your chest at 3 AM. |
 | 3 | 2-3 mo | Witching Hour | M | Evening fussiness. Find the favorite soothing method; asleep by 21:00. | First social smile. |
 | 4 | 3-4 mo | First Laughs | M | Play mini-games: make the baby laugh 5 times; 15 min tummy time. | First real belly laugh. |
 | 5 | 4-5 mo | The Roller | M | Baby rolls: 6 diaper changes without breaking contact. | First roll over - on the play mat, toward you. |
@@ -293,6 +317,15 @@ Restart from the level start with money and supplies restored.
 "A Day Together" levels mix every unlocked mechanic, draw 2-4 random events from an age pool (unexpected visitor, delivery mix-up, teething night, power cut, rainy day indoors), and always include a signature Golden Moment so they feel special, not filler.
 
 ### 14.3 Detailed designs of selected levels
+
+#### Level 2 - Night Shift (1-2 months, night level, 20:30-07:00)
+- **Setup:** 20:30, after a long day: the parent starts tired (Energy 30). The baby is fed and sleepy. The night rules of Section 7.5 start at 22:00.
+- **Evening (20:30-22:00):** the last chance to prepare. Deliveries stop at 22:00, so stock up now. Useful preparations: prepare bottles (formula), *Bedtime prep* (diaper caddy in the bedroom), eat, and settle the baby in the bassinet next to the bed.
+- **Night (22:00-07:00):** the baby wakes for feeds every 2-3 hours and stirs in between. Each time the fast-forward drops to 1x, the player decides: get up now, or wait and let the baby resettle. Waking up makes the parent groggy; walking across the house at night costs sleep.
+- **Settling:** rocking in arms is faster but needs a careful transfer (wait for deep sleep); putting the baby down drowsy in the bassinet is slower but needs no transfer.
+- **Objective:** at least 3 night feeds, and at least 5 hours of sleep by 07:00. The general failure conditions still apply.
+- **Joy:** the signature Golden Moment (from M4) is the baby asleep on your chest at 3 AM: a sleeping baby held in deep sleep.
+- **Lessons (Milestone card):** babies are noisy sleepers - pause before going in; put the baby down drowsy but awake; room-sharing in a separate bassinet is the recommended safe-sleep arrangement for the first months.
 
 #### Level 22 - Hide and Seek (21-22 months, day level, evening segment)
 - **Setup:** after dinner it's bath time. When you say "Bath time!", the toddler giggles and runs off to hide.
@@ -350,7 +383,7 @@ Title → baby setup (baby name, sex, appearance; feeding choice) → level map 
 ## 16. Realism and safety guidelines
 
 - **Consultant** (pediatric nurse or pediatrician) reviews facts, rates and cards before release. Cards carry a short disclaimer: general information, not medical advice.
-- **Safe sleep:** baby on their back in a crib with no pillows, bumpers or loose blankets; no action allows otherwise.
+- **Safe sleep:** baby on their back in a crib or bassinet with no pillows, bumpers or loose blankets; no action allows otherwise. Room-sharing (the baby's own bassinet in the parents' room) for the first months. Rocking to sleep happens in arms while awake; the parent never falls asleep holding the baby.
 - **Changing table:** from month 5, one hand on the baby.
 - **Bath:** never leave the tub area; check water temperature (Splash Attack).
 - **Hide and seek:** appliances are never hiding spots.

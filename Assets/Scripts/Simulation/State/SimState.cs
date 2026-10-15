@@ -9,7 +9,17 @@ namespace BabyChampion.Simulation
 
     public enum Outcome { Running, Survived, Failed }
 
-    public enum FailReason { None, ParentCollapsed, CryingBudget, ContinuousCrying }
+    public enum FailReason
+    {
+        None,
+        ParentCollapsed,
+        CryingBudget,
+        ContinuousCrying,
+        /// <summary>Time ran out before every goal of the level was met.</summary>
+        ObjectiveMissed,
+        /// <summary>A level-specific fail condition (<see cref="FailCondition"/>).</summary>
+        LevelRule,
+    }
 
     /// <summary>Why the baby is crying. Several causes can be active at once.</summary>
     [Flags]
@@ -111,6 +121,18 @@ namespace BabyChampion.Simulation
         public double arrivesAtMinute;
     }
 
+    /// <summary>The grandparent who came after a Call for help, and what they are doing for the baby.</summary>
+    [Serializable]
+    public class HelperState
+    {
+        /// <summary>True from the call until the help time is over.</summary>
+        public bool present;
+        public double untilMinute;
+        public int calls;
+        /// <summary>The care task in progress, or null.</summary>
+        public ActiveAction action;
+    }
+
     /// <summary>Per-day measurements for scoring and the balance simulator.</summary>
     [Serializable]
     public class DayStats
@@ -140,6 +162,9 @@ namespace BabyChampion.Simulation
         public int ordersPlaced;
         public int moneySpent;
         public double parentSleepMinutes;
+        public int helpCalls;
+        /// <summary>Care tasks the grandparent finished; they do not count towards the level's goals.</summary>
+        public int helperTasks;
 
         public double AverageWellbeing => wellbeingSamples == 0 ? 0 : wellbeingSum / wellbeingSamples;
     }
@@ -160,6 +185,9 @@ namespace BabyChampion.Simulation
         public SupplyStock supplies = new SupplyStock();
         public List<Delivery> deliveries = new List<Delivery>();
         public DayStats stats = new DayStats();
+        public HelperState helper = new HelperState();
+        /// <summary>The rules of the level being played (a copy), or null for a free day.</summary>
+        public LevelDefinition level;
         public Outcome outcome;
         public FailReason failReason;
     }

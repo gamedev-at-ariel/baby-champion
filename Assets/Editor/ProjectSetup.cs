@@ -177,13 +177,22 @@ namespace BabyChampion.Editor
             return "test scene: saved " + TestScenePath;
         }
 
-        /// <summary>Adds a scene to the build list (once), optionally as the first scene, keeping the others.</summary>
+        /// <summary>
+        /// Adds a scene to the build list (once), optionally as the first scene, keeping the others.
+        /// A scene already in the list keeps its place unless it is to be first.
+        /// </summary>
         public static void AddBuildScene(string path, bool first = false)
         {
-            var scenes = EditorBuildSettings.scenes.Where(s => s.path != path).ToList();
+            var scenes = EditorBuildSettings.scenes.ToList();
             var scene = new EditorBuildSettingsScene(path, true);
-            if (first) scenes.Insert(0, scene);
-            else scenes.Add(scene);
+            int existing = scenes.FindIndex(s => s.path == path);
+            if (existing >= 0 && !first) scenes[existing] = scene;
+            else
+            {
+                if (existing >= 0) scenes.RemoveAt(existing);
+                if (first) scenes.Insert(0, scene);
+                else scenes.Add(scene);
+            }
             EditorBuildSettings.scenes = scenes.ToArray();
         }
 

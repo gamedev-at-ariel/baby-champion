@@ -1,4 +1,4 @@
-/* Baby Champion HUD (M2 greybox). Reference resolution 1280x720, matched on height. */
+/* Baby Champion HUD (greybox). Reference resolution 1280x720, matched on height. */
 
 .hud {
     position: absolute;
@@ -22,6 +22,11 @@
 .clock { font-size: 34px; -unity-font-style: bold; }
 .objective { font-size: 15px; color: rgb(90, 80, 90); white-space: normal; }
 .speed { font-size: 15px; color: rgb(60, 90, 160); -unity-font-style: bold; }
+.objective--title { -unity-font-style: bold; color: rgb(60, 50, 60); }
+.goals { margin: 2px 0; }
+.goal { flex-direction: row; align-items: center; margin: 1px 0; }
+.check { width: 20px; height: 20px; margin-right: 6px; flex-shrink: 0; }
+.goal-text { font-size: 15px; white-space: normal; flex-shrink: 1; }
 
 /* ---------------------------------------------------------------- top-center: baby needs */
 .needs { position: absolute; top: 10px; left: 300px; right: 300px; flex-direction: row; justify-content: center; }
@@ -73,6 +78,12 @@
 .ticker { position: absolute; right: 12px; bottom: 12px; width: 300px; align-items: flex-end; }
 .ticker-line { font-size: 14px; background-color: rgba(255, 250, 242, 0.85); border-radius: 6px; padding: 2px 6px; margin-top: 3px; white-space: normal; }
 .toasts { position: absolute; top: 110px; left: 300px; right: 300px; align-items: center; }
+.coach {
+    position: absolute; bottom: 96px; left: 360px; right: 360px;
+    font-size: 17px; white-space: normal; -unity-text-align: middle-center;
+    background-color: rgb(255, 246, 200); color: rgb(70, 55, 30);
+    border-radius: 14px; border-width: 2px; border-color: rgb(225, 185, 80); padding: 8px 14px;
+}
 .toast { font-size: 18px; background-color: rgba(60, 40, 50, 0.88); color: white; border-radius: 10px; padding: 6px 14px; margin-top: 6px; -unity-font-style: bold; white-space: normal; }
 
 /* ---------------------------------------------------------------- radial menu */
@@ -96,9 +107,20 @@
 .modal-layer { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(30, 20, 30, 0.45); justify-content: center; align-items: center; }
 .modal { background-color: rgb(255, 250, 242); border-radius: 18px; padding: 16px 20px; min-width: 520px; max-width: 900px; }
 .modal-title { font-size: 26px; -unity-font-style: bold; margin-bottom: 8px; white-space: normal; }
+.modal-kicker { font-size: 15px; color: rgb(140, 100, 70); -unity-font-style: bold; }
+.modal-subtitle { font-size: 18px; -unity-font-style: bold; margin-top: 6px; margin-bottom: 2px; }
+.modal-note { font-size: 14px; color: rgb(100, 90, 95); white-space: normal; margin-top: 4px; }
+.modal-hint { font-size: 17px; color: rgb(60, 90, 60); white-space: normal; margin-top: 4px; }
+.row--end { justify-content: flex-end; margin-top: 8px; }
+.stars { flex-direction: row; justify-content: center; margin: 4px 0 8px 0; }
+.star { width: 64px; height: 64px; margin: 0 6px; }
+.help-row { margin-top: 10px; padding-top: 6px; border-top-width: 1px; border-color: rgba(120, 96, 80, 0.3); }
+.help-text { width: 300px; }
 .modal-text { font-size: 17px; margin-bottom: 4px; white-space: normal; }
 .modal-button { min-width: 120px; height: 60px; font-size: 18px; -unity-font-style: bold; border-radius: 12px; margin: 4px; }
 .modal-button--selected { background-color: rgb(255, 214, 150); border-color: rgb(200, 140, 60); }
+.modal-button--primary { background-color: rgb(120, 190, 120); border-color: rgb(70, 140, 70); color: white; }
+.modal-button--primary:hover { background-color: rgb(100, 175, 100); }
 .order-row { flex-direction: row; align-items: center; margin: 3px 0; }
 .order-name { width: 190px; font-size: 18px; }
 
@@ -118,4 +140,5 @@
 }
 .tag--baby { font-size: 18px; -unity-font-style: bold; background-color: rgb(255, 230, 110); border-color: rgb(200, 160, 40); }
 .tag--crying { background-color: rgb(225, 70, 60); color: rgb(255, 255, 255); border-color: rgb(150, 30, 30); }
+.tag--helper { font-size: 15px; -unity-font-style: bold; background-color: rgb(170, 120, 200); color: rgb(255, 255, 255); border-color: rgb(110, 70, 140); }
 .tag--you { font-size: 15px; -unity-font-style: bold; background-color: rgb(70, 115, 205); color: rgb(255, 255, 255); border-color: rgb(40, 70, 140); }

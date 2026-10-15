@@ -99,6 +99,9 @@ namespace BabyChampion.Simulation
         public double minParentHungerToEat = 10;
         public int maxBottlesReady = 2;
 
+        // Call for help (Section 9): how long the grandparent stays.
+        public double helpMinutes = 120;
+
         // Failure (Section 13.2)
         public double cryingBudgetMinutes = 180;
         public double maxContinuousCryMinutes = 30;

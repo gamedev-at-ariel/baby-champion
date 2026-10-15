@@ -37,6 +37,7 @@ namespace BabyChampion.Game
             new ActionInfo { Type = ActionType.Rest, Label = "Rest", HandsFree = true, AtStation = true },
             new ActionInfo { Type = ActionType.Sleep, Label = "Sleep", HandsFree = true, AtStation = true },
             new ActionInfo { Type = ActionType.OrderSupplies, Label = "Order" },
+            new ActionInfo { Type = ActionType.CallForHelp, Label = "Call Grandma" },
         };
 
         public static ActionInfo For(ActionType type)

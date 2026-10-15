@@ -90,12 +90,14 @@ step "Data validation"
 run_unity validation -nographics -quit -executeMethod BabyChampion.Editor.DataValidator.Run || fail "data validation"
 cat artifacts/validation.txt
 
-# Newborn day (level 1) with every bot; fails when a 3-plan.md Section 6 target is missed.
+# Every built level with every bot; fails when a 3-plan.md Section 6 target is missed.
 # Breastfeeding plays like "both", so formula is the only other case worth running.
-for feeding in both formula; do
-  step "Balance simulator (level 1, $feeding)"
-  run_unity "balance-$feeding" -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level 1 -bot all -runs 500 -seed 1 -feeding "$feeding" || fail "balance targets ($feeding; see artifacts/balance/)"
-  grep "\[BalanceSim\]" "artifacts/logs/balance-$feeding.log" | sed 's/^.*\[BalanceSim\] //' | sort -u
+for level in 1 2; do
+  for feeding in both formula; do
+    step "Balance simulator (level $level, $feeding)"
+    run_unity "balance-$level-$feeding" -nographics -quit -executeMethod BabyChampion.Editor.BalanceSim.Run -level "$level" -bot all -runs 500 -seed 1 -feeding "$feeding" || fail "balance targets (level $level, $feeding; see artifacts/balance/)"
+    grep "\[BalanceSim\]" "artifacts/logs/balance-$level-$feeding.log" | sed 's/^.*\[BalanceSim\] //' | sort -u
+  done
 done
 
 # Every room, the HUD, the radial menu and the phone at phone and desktop resolutions, for review.

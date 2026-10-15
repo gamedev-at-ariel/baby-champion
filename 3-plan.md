@@ -1,6 +1,6 @@
 # Baby Champion - Milestone Plan
 
-Based on 2-design-detailed.md v0.4.1. No code has been written yet; this plan describes the order of work, how each milestone is verified from the Unity command line, and what you should playtest.
+Based on 2-design-detailed.md v0.5. No code has been written yet; this plan describes the order of work, how each milestone is verified from the Unity command line, and what you should playtest.
 
 Milestones M0-M12 build and release the base game (a single-parent game). Milestones L1-L3 add the later-stage features: the partner NPC, two-player mode and ads.
 
@@ -147,7 +147,7 @@ Rules:
 
 ---
 
-### M3 - Level framework, outcomes and saving
+### M3 - Level framework, outcomes and saving ✅ Done (2026-10-15, v0.4.0)
 **Goal:** real levels with objectives, failure, stars and progress.
 
 **Scope**
@@ -166,6 +166,43 @@ Rules:
 **Playtest (20 minutes)**
 - Play Levels 1 and 2 from a fresh save, including deliberately failing once.
 - Check: are objectives clear before you start? Does failure feel fair and friendly? Does the night shift feel tiring but not miserable, even alone?
+
+**Notes** (implemented 2026-10-15; awaiting playtest)
+- *Where:* level rules in `Assets/Scripts/Simulation/Levels` (`LevelTable`/`LevelDefinition`, `LevelScoring`), progress in `Simulation/Progress/SaveSlot.cs`; data in `Assets/Data/Levels.asset` (exported as `levels.json` by `bc_export_data`). New **Menu scene** (`Assets/Scenes/Menu.unity`, first build scene, built by `unity command bc_setup_menu`): title → 3 save slots → baby setup (name, girl/boy, skin tone, outfit, feeding) → level map by chapter. The house gets the level briefing, an objective checklist, the Level 1 tutorial coach, success (stars) and failure screens, and a grandparent avatar. Saves are JSON in `persistentDataPath/saves/slotN.json` (Android, Editor) or PlayerPrefs (Web, flushed at once).
+- *Decisions:* a level definition holds the objective text and briefing, start hour and length, crying budget and continuous-crying limit, allowance, help calls, goals (`Feeds`, `Burps`, `DiaperChanges`, `BabyNaps`, `EnergyAtEnd`), level-specific fail conditions (`EnergyAtOrBelow`, `DiaperRash`; not used by Levels 1-2), star thresholds, start values and the list of available actions. Goals are checked when time runs out; a missed one fails the level with `ObjectiveMissed`. **Level 1** (First Day Home): 07:00-07:00, goals feed, burp, change, put to sleep once each, crying budget 180. **Level 2** (Night Shift): 21:00-07:00, start Energy 40, baby tired; goals 3 night feeds and Energy above 20 at 07:00; crying budget **60** (with 75 Sloppy scored 84%, over its target). Money and supplies carry over **only when a level is completed**; a retry or failed attempt starts from the same values (design 13.4). Level 2 adds an allowance of 40.
+- *Call for help:* Grandma comes for 2 in-game hours, once per level, from the phone. She takes over all baby care (one task at a time, with the parent's durations; bottle feeds use formula, or expressed milk when breastfeeding; changes use the home's diapers), the parent can sleep while the baby is awake, and crying does not wake them. Her care does not count towards the level's goals. A helped level earns at most 2 stars.
+- *Deviations:* **3 stars = 2 stars + Joy 60+ at the end**; the signature Golden Moment joins the third-star rule in M4. **2 stars are almost automatic** with the design's threshold (average wellbeing 70): Greedy averages 96 and Sloppy 88, so the 2-star rate equals the 1-star rate. Kept at 70 per the design; raising it (to about 90) is a one-value change worth deciding after the playtest. Levels unlock in order; unbuilt levels show as "Coming soon". The safety-net gift (design Section 10) is not in yet. Fixed on the way: the event ticker always printed times from 07:00, and `bc_setup_house` could lose its panel settings when run from another scene (assets loaded before `NewScene` are unloaded).
+- *Balance (500 seeded runs, 1+ star rate, both / formula):* Level 1 Greedy 99.6% / 100%, Sloppy 78% / 60%, Idle 0%. Level 2 Greedy 100% / 100%, Sloppy 70% / 59%, Idle 0%. All within the chapter 1 targets (stricter than M3's 85% for Level 2). `tools/ci.sh` / `ci.ps1` now run the balance simulator on Levels 1 and 2.
+- *Tests:* EditMode 121 (levels, goals, fail conditions, stars, help, save slots, level validation, balance per level). PlayMode 42 (+2 Input System package tests skipped): Greedy completes Levels 1 and 2 through the house at high speed, with the save read back from storage between them; Idle fails both with the same reason as the headless simulation; retry restores money and supplies; Call for help caps the stars at 2; briefing holds the clock; tutorial coach; menu flow (new baby → map → Level 1 → back to the map), delete confirmation, baby setup. Screenshots now also cover the briefing, success and failure screens and four menu pages (32 images).
+- *CLI verification (2026-10-15):* `tools/ci.sh` green: EditMode 121/121, PlayMode 42/42 (plus 2 Input System package tests marked Ignored), data validation, balance targets for Levels 1 and 2 (both feeding choices), 32 screenshots, Web Release and Android Dev builds. *Build sizes:* Web Release download 17,160 KiB (+88 KiB vs M2), Android Dev APK 45,164 KiB (about the same as M2).
+- *Superseded:* Level 2 as built here (21:00-07:00, objective "Energy above 20") played like a shorter Level 1: the Energy goal never decided a run. Design v0.5 redesigns it with night rules; that work is milestone M3.5.
+- *Deferred:* the save-persistence check on itch.io (the PlayerPrefs key depends on the page origin); the on-screen keyboard for the name field on mobile web is untested; menu buttons are tested through their actions rather than simulated pointer taps (the house HUD's tap path is already covered).
+
+---
+
+### M3.5 - Night rules and the Night Shift redesign
+**Goal:** Level 2 becomes its own level with new mechanics, not a shorter Level 1: the player manages sleep, and night has rules of its own (design v0.5, Sections 7.5 and 14.3).
+
+**Scope**
+- **Stirring** (night only, 22:00-06:00, from Level 2 on): a sleeping baby in light sleep may stir; left alone, they usually resettle (initial tuning 70% within ~5 min); a real need (hunger, dirty diaper, gas) turns stirring into crying after ~3 min; going in wakes them fully. Stirring does not count as crying and does not wake the parent, but the sleep fast-forward drops to 1x and a "?" bubble shows on the baby (and an edge indicator when off-screen).
+- **Light and deep sleep:** ~15 min of light sleep after falling asleep, then deep; ~45-min cycles ending in a short light phase. Visible on the baby (fluttering vs limp arms) and in the need icon.
+- **Rock to sleep** (new action, in arms, works up to Tension 75) beside *Put to sleep* in the crib or bassinet (drowsy but awake, Tension below 50). **Transfer:** putting a sleeping baby down in light sleep wakes them (initial tuning 70%); in deep sleep it is safe.
+- **Bedtime prep:** no deliveries 22:00-07:00 (orders arrive at 07:00, no express at night); *Bedtime prep* action (diaper caddy in the bedroom, so changes can happen there for the night); a **bassinet** next to the parents' bed (house layout change).
+- **Grogginess:** woken from sleep, the parent is groggy for 10 in-game minutes (walking 30% slower, timed actions 25% longer).
+- **Level 2 redesign:** 20:30-07:00 with an evening to prepare; parent starts at Energy 30; goals: at least 3 night feeds and **at least 5 hours of sleep** (new goal type, from the parent's sleep minutes). HUD: sleep-hours goal, "Night" marker on the clock, delivery cut-off shown on the phone. Briefing and tutorial-style hints for the new rules on the first night.
+- Night rules are a level setting (on from Level 2), so Level 1 and its balance stay as they are.
+- Bots: **Greedy** waits out stirring unless a real need is visible, waits for deep sleep before a transfer, and prepares before 22:00; **Sloppy** often goes in at the first stir and transfers in light sleep; **Idle** unchanged.
+
+**CLI verification**
+- EditMode tests: stirring only at night and only from light sleep; a stirring baby with no need resettles at the tuned rate over seeded runs, and one with a real need cries; going in wakes a stirring baby; stirring does not count towards the crying budget and drops the fast-forward to 1x; transfer in light sleep wakes at the tuned rate, in deep sleep never; grogginess slows actions for 10 minutes; orders placed at night arrive at 07:00 and express is refused; the sleep-hours goal; Level 1 results are unchanged by the night rules (same seeds give the same day as before).
+- Data validator: night-rule tuning values in range; the sleep-hours goal is valid only in levels that offer Sleep.
+- PlayMode tests: the Greedy bot completes Level 2 through the house; a "rush in" bot loses sleep and fails the sleep goal more often than Greedy; the bassinet and bedtime-prep station are reachable; the stirring bubble and edge indicator appear; Rock to sleep then a transfer in deep sleep leaves the baby asleep in the bassinet.
+- Balance simulator, Level 2 (500 runs, both feeding choices): Greedy at least 95% 1-star, Sloppy 50-80%, Idle 0%, **and Sloppy's failures include the sleep goal, not only the crying budget** (reported per fail reason). Level 1 targets still met.
+- Screenshots: Level 2 at night with a stirring baby, the bassinet, and the briefing.
+
+**Playtest (20 minutes)**
+- Play Level 2 twice: once rushing in at every sound, once waiting.
+- Check: is the "wait or go?" choice readable and tense in a good way? Can you tell light from deep sleep before a transfer? Does the evening preparation feel useful rather than a chore? Does the night feel different from Level 1?
 
 ---
 

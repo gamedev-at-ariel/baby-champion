@@ -138,7 +138,17 @@ namespace BabyChampion.Simulation
             if (type == typeof(bool)) return node is bool b ? b : throw new FormatException($"{path}: expected true or false");
             if (type.IsEnum)
             {
-                if (node is string name) return Enum.Parse(type, name);
+                if (node is string name)
+                {
+                    try
+                    {
+                        return Enum.Parse(type, name);
+                    }
+                    catch (ArgumentException)
+                    {
+                        throw new FormatException($"{path}: '{name}' is not a {type.Name}");
+                    }
+                }
                 throw new FormatException($"{path}: expected an enum name for {type.Name}");
             }
             if (type == typeof(double) || type == typeof(float) || type == typeof(int) || type == typeof(uint) || type == typeof(long))

@@ -30,6 +30,8 @@ namespace BabyChampion.Tests.EditMode
                 $"{nameof(ParentCommand)}.{nameof(ParentCommand.Of)}",
                 $"{nameof(ParentCommand)}.{nameof(ParentCommand.Order)}",
                 $"{nameof(ParentCommand)}.{nameof(ParentCommand.Equals)}",
+                // Read-only query on level data (which actions a level offers).
+                $"{nameof(LevelDefinition)}.{nameof(LevelDefinition.Allows)}",
             };
             var offenders = typeof(CareSimulation).Assembly.GetExportedTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)

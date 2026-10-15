@@ -37,11 +37,12 @@ namespace BabyChampion.Tests.EditMode
         }
 
         [Test]
-        public void HouseScene_IsTheFirstBuildScene_AndTheOthersAreIncluded()
+        public void MenuScene_IsTheFirstBuildScene_AndTheOthersAreIncluded()
         {
-            Assert.That(EditorBuildSettings.scenes.Length, Is.GreaterThan(2));
-            Assert.AreEqual(HouseSetup.ScenePath, EditorBuildSettings.scenes[0].path);
+            Assert.That(EditorBuildSettings.scenes.Length, Is.GreaterThan(3));
+            Assert.AreEqual(MenuSetup.ScenePath, EditorBuildSettings.scenes[0].path);
             var paths = EditorBuildSettings.scenes.Select(s => s.path).ToList();
+            CollectionAssert.Contains(paths, HouseSetup.ScenePath);
             CollectionAssert.Contains(paths, DebugDaySetup.ScenePath);
             CollectionAssert.Contains(paths, ProjectSetup.TestScenePath);
         }

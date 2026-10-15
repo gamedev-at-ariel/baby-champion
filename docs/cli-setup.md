@@ -84,10 +84,11 @@ Simulation data and tools (M1):
 | Create the data assets from the built-in defaults | | `unity command bc_setup_data` (`-- --reset true` overwrites) |
 | Export / import the data as JSON (`artifacts/data/`) | | `unity command bc_export_data`, `unity command bc_import_data` |
 | Rebuild the debug scene | | `unity command bc_setup_debug_scene` |
-| Rebuild the house scene (rooms, furniture, NavMesh, HUD) | | `unity command bc_setup_house` |
-| Screenshots of every room, the HUD, radial menu and phone (`artifacts/screens/`) | `tools/unity.sh -executeMethod BabyChampion.Editor.ScreenshotTool.Run` (needs graphics; no `-quit`, it exits itself) | `unity command bc_screenshots`, then `unity command bc_screenshots_status` |
+| Rebuild the house scene (rooms, furniture, grandparent, NavMesh, HUD) | | `unity command bc_setup_house` |
+| Rebuild the menu scene (title, save slots, baby setup, level map; first build scene) | | `unity command bc_setup_menu` |
+| Screenshots of every room, the HUD, radial menu, phone, level briefing, results and menus (`artifacts/screens/`) | `tools/unity.sh -executeMethod BabyChampion.Editor.ScreenshotTool.Run` (needs graphics; no `-quit`, it exits itself) | `unity command bc_screenshots`, then `unity command bc_screenshots_status` |
 
-The balance simulator writes `artifacts/balance/level<N>-<feeding>-<bot>-runs.csv` (one row per run: outcome, crying minutes by cause, supply use), `...-energy.csv` (parent Energy at each in-game hour) and `level<N>-<feeding>-summary.csv`. It exits 1 when a 3-plan.md Section 6 target is missed.
+`-level N` plays the level definition of a built level (Levels 1-2 from M3), otherwise a free day of month N-1. Success means at least 1 star; the summary also reports 2- and 3-star rates. The balance simulator writes `artifacts/balance/level<N>-<feeding>-<bot>-runs.csv` (one row per run: outcome, crying minutes by cause, supply use), `...-energy.csv` (parent Energy at each in-game hour) and `level<N>-<feeding>-summary.csv`. It exits 1 when a 3-plan.md Section 6 target is missed.
 
 PlayMode tests in the open Editor: `unity command run_tests -- --mode playmode --async_tests true`, then poll `unity command test_status`. The synchronous form reports 0 tests.
 
@@ -110,7 +111,7 @@ The version comes from `version.txt`. Each build is stamped `<version>+<git comm
 
 ## 6. Runtime arguments (development builds only)
 
-Accepted: `-level N`, `-timescale X`, `-seed S`, `-skipIntro`. In M0 only `-timescale` has an effect; the others are parsed for later milestones.
+Accepted: `-level N`, `-timescale X`, `-seed S`, `-skipIntro`. `-level N` starts a built level straight from the menu (without saving; from M3), or a free day of month N-1 otherwise; `-seed S` seeds it; `-skipIntro` skips the title screen and the level briefing.
 
 **Web:** add URL parameters, for example `index.html?timescale=4&level=2`.
 

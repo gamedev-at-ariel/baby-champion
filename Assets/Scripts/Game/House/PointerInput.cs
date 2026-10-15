@@ -76,7 +76,7 @@ namespace BabyChampion.Game
             _pressed = false;
             var position = point.action.ReadValue<Vector2>();
             bool still = (position - _pressPosition).magnitude <= tapMaxMovePixels;
-            if (!_pressOverUi && !_gesture && still && game != null && rig != null && !game.Paused) game.Tap(_pressPosition, rig.Camera);
+            if (!_pressOverUi && !_gesture && still && game != null && rig != null && !game.Paused && !game.WaitingToStart) game.Tap(_pressPosition, rig.Camera);
         }
 
         void HandleTouchGestures()
@@ -128,7 +128,7 @@ namespace BabyChampion.Game
 
             if (rotateLeft != null && rotateLeft.action.WasPressedThisFrame()) rig.Rotate(-1);
             if (rotateRight != null && rotateRight.action.WasPressedThisFrame()) rig.Rotate(1);
-            if (pause != null && pause.action.WasPressedThisFrame() && game.Sim != null && game.Sim.Outcome == Simulation.Outcome.Running)
+            if (pause != null && pause.action.WasPressedThisFrame() && game.Sim != null && game.Sim.Outcome == Simulation.Outcome.Running && !game.WaitingToStart)
                 game.Paused = !game.Paused;
         }
     }

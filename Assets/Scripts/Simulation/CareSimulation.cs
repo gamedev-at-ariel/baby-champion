@@ -8,14 +8,17 @@ namespace BabyChampion.Simulation
     {
         public readonly double Minute;
         public readonly string Text;
+        /// <summary>The clock hour at minute 0 (the level's start).</summary>
+        public readonly int StartHour;
 
-        public SimEvent(double minute, string text)
+        public SimEvent(double minute, string text, int startHour = 7)
         {
             Minute = minute;
             Text = text;
+            StartHour = startHour;
         }
 
-        public override string ToString() => $"{CareSimulation.FormatClock(Minute)} {Text}";
+        public override string ToString() => $"{CareSimulation.FormatClock(Minute, StartHour)} {Text}";
     }
 
     /// <summary>
@@ -34,15 +37,48 @@ namespace BabyChampion.Simulation
         readonly SeededRandom _random;
         readonly AgeBand _band;
         readonly List<SimEvent> _recentEvents = new List<SimEvent>();
+        readonly LevelDefinition _levelCopy;
         IParentController _controller;
         double _pendingRealSeconds;
 
         public event Action<SimEvent> EventRaised;
 
-        public static CareSimulation NewDay(SimConfig config, int month, FeedingChoice feeding, int seed)
+        /// <summary>A free day (no level rules): the Tuning day-start values, 07:00 to 07:00.</summary>
+        public static CareSimulation NewDay(SimConfig config, int month, FeedingChoice feeding, int seed) =>
+            new CareSimulation(config, NewState(config, month, feeding, seed));
+
+        /// <summary>
+        /// Starts a level: its time window, start values and rules. Money and supplies come from
+        /// <paramref name="household"/> (carried over from the previous level), or the Tuning start
+        /// values when null; the level's allowance is added on top.
+        /// </summary>
+        public static CareSimulation StartLevel(SimConfig config, LevelDefinition level, FeedingChoice feeding, int seed, Household household = null)
+        {
+            if (level == null) throw new ArgumentNullException(nameof(level));
+            var state = NewState(config, level.month, feeding, seed);
+            var ls = level.start ?? new LevelStart();
+            if (ls.babyHunger >= 0) state.baby.hunger = ls.babyHunger;
+            if (ls.babyTiredness >= 0) state.baby.tiredness = ls.babyTiredness;
+            if (ls.parentEnergy >= 0) state.parent.energy = ls.parentEnergy;
+            if (ls.parentHunger >= 0) state.parent.hunger = ls.parentHunger;
+            if (ls.parentStress >= 0) state.parent.stress = ls.parentStress;
+            if (ls.parentJoy >= 0) state.parent.joy = ls.parentJoy;
+            state.baby.asleep = ls.babyAsleep;
+            if (household != null)
+            {
+                var copy = household.Copy();
+                state.money = copy.money;
+                state.supplies = copy.supplies;
+            }
+            state.money += level.allowance;
+            state.level = JsonCodec.Deserialize<LevelDefinition>(JsonCodec.Serialize(level));
+            return new CareSimulation(config, state);
+        }
+
+        static SimState NewState(SimConfig config, int month, FeedingChoice feeding, int seed)
         {
             var start = config.tuning.start;
-            var state = new SimState
+            return new SimState
             {
                 month = month,
                 feeding = feeding,
@@ -56,7 +92,6 @@ namespace BabyChampion.Simulation
                     babyFood = start.babyFood, adultFood = start.adultFood,
                 },
             };
-            return new CareSimulation(config, state);
         }
 
         public CareSimulation(SimConfig config, SimState state)
@@ -66,6 +101,8 @@ namespace BabyChampion.Simulation
             _t = config.tuning;
             _band = config.ageRates.ForMonth(state.month);
             _random = new SeededRandom(1) { State = state.randomState };
+            if (_s.helper == null) _s.helper = new HelperState();
+            if (_s.level != null) _levelCopy = JsonCodec.Deserialize<LevelDefinition>(JsonCodec.Serialize(_s.level));
             MinutesPerRealSecond = _t.minutesPerRealSecond;
         }
 
@@ -77,8 +114,17 @@ namespace BabyChampion.Simulation
         public FeedingChoice Feeding => _s.feeding;
         /// <summary>In-game minutes since the day started.</summary>
         public double Minute => _s.minute;
-        public string ClockText => FormatClock(_s.minute, _t.dayStartHour);
-        public double DayProgress => Math.Min(1, _s.minute / _t.dayLengthMinutes);
+        public string ClockText => FormatClock(_s.minute, StartHour);
+        public double DayProgress => Math.Min(1, _s.minute / LengthMinutes);
+        /// <summary>The clock hour at minute 0: the level's, or the Tuning day start.</summary>
+        public int StartHour => _s.level?.startHour ?? _t.dayStartHour;
+        /// <summary>The time limit in in-game minutes.</summary>
+        public double LengthMinutes => _s.level?.lengthMinutes ?? _t.dayLengthMinutes;
+        public double CryingBudgetMinutes => _s.level?.cryingBudgetMinutes ?? _t.cryingBudgetMinutes;
+        public double MaxContinuousCryMinutes => _s.level?.maxContinuousCryMinutes ?? _t.maxContinuousCryMinutes;
+        /// <summary>A copy of the level's rules, or null on a free day. Changing it changes nothing.</summary>
+        public LevelDefinition Level => _levelCopy;
+        public int LevelNumber => _s.level?.number ?? 0;
         public Outcome Outcome => _s.outcome;
         public FailReason FailReason => _s.failReason;
         public int Money => _s.money;
@@ -89,6 +135,49 @@ namespace BabyChampion.Simulation
         public int FeedsToday => _s.stats.feeds;
         public double CryingMinutesToday => _s.stats.cryingMinutes;
         public IReadOnlyList<SimEvent> RecentEvents => _recentEvents;
+
+        /// <summary>Progress on each goal of the level (empty on a free day).</summary>
+        public List<GoalProgress> Goals
+        {
+            get
+            {
+                var list = new List<GoalProgress>();
+                if (_s.level?.goals == null) return list;
+                foreach (var goal in _s.level.goals) list.Add(new GoalProgress(goal, GoalValue(goal.type)));
+                return list;
+            }
+        }
+
+        double GoalValue(GoalType type)
+        {
+            switch (type)
+            {
+                case GoalType.Feeds: return _s.stats.feeds;
+                case GoalType.Burps: return _s.stats.burps;
+                case GoalType.DiaperChanges: return _s.stats.diaperChanges;
+                case GoalType.BabyNaps: return _s.stats.babyNaps;
+                case GoalType.EnergyAtEnd: return _s.parent.energy;
+                default: return 0;
+            }
+        }
+
+        /// <summary>The stars and conditions once the level is over; null while it runs.</summary>
+        public LevelResult Result => _s.outcome == Outcome.Running
+            ? null
+            : LevelScoring.Score(LevelNumber, _s.level?.stars, _s.outcome == Outcome.Survived, _s.failReason,
+                _s.stats.AverageWellbeing, _s.parent.joy, _s.helper.calls > 0);
+
+        /// <summary>Money and supplies now (carried to the next level when this one is completed).</summary>
+        public Household CopyHousehold() => new Household { money = _s.money, supplies = JsonCodec.Deserialize<SupplyStock>(JsonCodec.Serialize(_s.supplies)) };
+
+        /// <summary>True while the grandparent looks after the baby.</summary>
+        public bool HelpActive => _s.helper.present;
+        public double HelpUntilMinute => _s.helper.untilMinute;
+        public int HelpCallsAllowed => _s.level?.helpCalls ?? 1;
+        public int HelpCallsLeft => Math.Max(0, HelpCallsAllowed - _s.helper.calls);
+        /// <summary>The care task the grandparent is doing; meaningful only when <see cref="HelperBusy"/>.</summary>
+        public bool HelperBusy => _s.helper.action != null;
+        public ActionType HelperAction => _s.helper.action?.type ?? ActionType.Stop;
 
         public IReadOnlyList<DeliveryInfo> PendingDeliveries
         {
@@ -118,6 +207,7 @@ namespace BabyChampion.Simulation
         {
             var state = JsonCodec.Deserialize<SimState>(json);
             if (state.version != 1) throw new FormatException($"Unsupported save version {state.version}");
+            if (state.level != null && state.level.goals == null) state.level.goals = new List<LevelGoal>();
             return new CareSimulation(config, state);
         }
 
@@ -176,7 +266,8 @@ namespace BabyChampion.Simulation
             var command = _controller?.Decide(this);
             if (command != null) Issue(command);
 
-            ProgressAction();
+            if (_s.parent.action != null) ProgressAction(_s.parent.action, byHelper: false);
+            UpdateHelper();
             UpdateBaby();
             UpdateCrying();
             UpdateParent();
@@ -186,11 +277,7 @@ namespace BabyChampion.Simulation
             _s.minute += TickMinutes;
             ArriveDeliveries();
 
-            if (_s.outcome == Outcome.Running && _s.minute >= _t.dayLengthMinutes)
-            {
-                _s.outcome = Outcome.Survived;
-                Emit("Morning! You made it through the day.");
-            }
+            if (_s.outcome == Outcome.Running && _s.minute >= LengthMinutes - 1e-9) TimeUp();
         }
 
         // ---------------------------------------------------------------- actions
@@ -205,10 +292,17 @@ namespace BabyChampion.Simulation
             var p = _s.parent;
             var supplies = _s.supplies;
 
+            if (_s.level != null && !_s.level.Allows(command.type)) return ActionCheck.No("Not in this level");
+
             switch (command.type)
             {
                 case ActionType.Stop:
                     return p.action == null ? ActionCheck.No("Nothing to stop") : ActionCheck.Ok;
+                case ActionType.CallForHelp:
+                    if (_s.helper.present) return ActionCheck.No("Grandma is already here");
+                    if (HelpCallsAllowed <= 0) return ActionCheck.No("Grandma can't come today");
+                    if (HelpCallsLeft <= 0) return ActionCheck.No("Grandma already came today");
+                    return ActionCheck.Ok;
                 case ActionType.OrderSupplies:
                     if (command.packs < 1) return ActionCheck.No("Order at least one pack");
                     int cost = _config.prices.Cost(command.item, command.packs, command.express);
@@ -216,6 +310,7 @@ namespace BabyChampion.Simulation
             }
 
             if (p.action != null && p.action.type == command.type) return ActionCheck.No("Already doing that");
+            if (_s.helper.present && IsBabyCare(command.type)) return ActionCheck.No("Grandma is looking after the baby");
 
             switch (command.type)
             {
@@ -259,12 +354,12 @@ namespace BabyChampion.Simulation
                     return ActionCheck.Ok;
                 case ActionType.Rest:
                     if (p.stress >= _t.stressBlocksSleep) return ActionCheck.No("Too stressed to rest");
-                    if (b.Crying) return ActionCheck.No("The baby is crying");
+                    if (b.Crying && !_s.helper.present) return ActionCheck.No("The baby is crying");
                     if (p.energy >= 100) return ActionCheck.No("You're fully rested");
                     return ActionCheck.Ok;
                 case ActionType.Sleep:
                     if (p.stress >= _t.stressBlocksSleep) return ActionCheck.No("Too stressed to sleep");
-                    if (!b.asleep) return ActionCheck.No("The baby is awake");
+                    if (!b.asleep && !_s.helper.present) return ActionCheck.No("The baby is awake");
                     if (p.energy >= 100) return ActionCheck.No("You're fully rested");
                     return ActionCheck.Ok;
                 default:
@@ -294,6 +389,11 @@ namespace BabyChampion.Simulation
             if (command.type == ActionType.OrderSupplies)
             {
                 PlaceOrder(command);
+                return;
+            }
+            if (command.type == ActionType.CallForHelp)
+            {
+                CallForHelp();
                 return;
             }
             if (p.action != null) Emit($"Stopped {p.action.type}");
@@ -335,7 +435,7 @@ namespace BabyChampion.Simulation
             _s.stats.moneySpent += cost;
             _s.stats.ordersPlaced++;
             _s.deliveries.Add(new Delivery { item = command.item, quantity = price.packSize * command.packs, arrivesAtMinute = arrives });
-            Emit($"Ordered {command.packs}x {command.item} for {cost}; arrives {FormatClock(arrives, _t.dayStartHour)}");
+            Emit($"Ordered {command.packs}x {command.item} for {cost}; arrives {FormatClock(arrives, StartHour)}");
         }
 
         void ArriveDeliveries()
@@ -350,10 +450,8 @@ namespace BabyChampion.Simulation
             }
         }
 
-        void ProgressAction()
+        void ProgressAction(ActiveAction a, bool byHelper)
         {
-            var a = _s.parent.action;
-            if (a == null) return;
             var b = _s.baby;
             var p = _s.parent;
             a.elapsedMinutes += TickMinutes;
@@ -363,7 +461,7 @@ namespace BabyChampion.Simulation
                 case ActionType.Breastfeed:
                 case ActionType.BottleFeed:
                     b.hunger = Math.Max(0, b.hunger - a.startHunger / a.durationMinutes);
-                    if (a.type == ActionType.Breastfeed) p.hunger += _t.breastfeedParentHunger / a.durationMinutes;
+                    if (a.type == ActionType.Breastfeed && !byHelper) p.hunger += _t.breastfeedParentHunger / a.durationMinutes;
                     break;
                 case ActionType.Soothe:
                 case ActionType.PutBabyToSleep:
@@ -372,23 +470,29 @@ namespace BabyChampion.Simulation
                 case ActionType.Play:
                     b.boredom = Math.Max(0, b.boredom - _t.playBoredomPerMinute);
                     b.tiredness += _t.playExtraTirednessPerMinute;
-                    p.joy += _t.joyFromPlay;
+                    if (!byHelper) p.joy += _t.joyFromPlay;
                     break;
                 case ActionType.Eat:
                     p.stress = Math.Max(0, p.stress - _t.stressDecayEating);
                     break;
             }
 
-            if (!a.Continuous && a.elapsedMinutes >= a.durationMinutes - 1e-9) Complete(a);
+            if (!a.Continuous && a.elapsedMinutes >= a.durationMinutes - 1e-9) Complete(a, byHelper);
         }
 
-        void Complete(ActiveAction a)
+        void Complete(ActiveAction a, bool byHelper)
         {
             var b = _s.baby;
             var p = _s.parent;
             var supplies = _s.supplies;
-            var stats = _s.stats;
-            p.action = null;
+            // The grandparent's care keeps the baby well, but the level's goals are the parent's.
+            var stats = byHelper ? new DayStats() : _s.stats;
+            if (byHelper)
+            {
+                _s.helper.action = null;
+                _s.stats.helperTasks++;
+            }
+            else p.action = null;
 
             switch (a.type)
             {
@@ -398,46 +502,46 @@ namespace BabyChampion.Simulation
                     b.needsBurp = true;
                     b.minutesSinceFeed = 0;
                     stats.feeds++;
-                    Emit("The baby is fed - time to burp");
+                    Emit(byHelper ? "Grandma fed the baby" : "The baby is fed - time to burp");
                     break;
                 case ActionType.PrepareBottle:
                     supplies.formula--;
                     supplies.bottlesReady++;
-                    stats.formulaUsed++;
+                    _s.stats.formulaUsed++;
                     Emit("A bottle is ready");
                     break;
                 case ActionType.Burp:
                     b.needsBurp = false;
                     b.gas = false;
                     stats.burps++;
-                    Emit("Burped!");
+                    Emit(byHelper ? "Grandma burped the baby" : "Burped!");
                     break;
                 case ActionType.ChangeDiaper:
                     b.diaper = DiaperState.Clean;
                     b.soiledMinutes = 0;
                     supplies.diapers--;
                     supplies.wipes--;
-                    stats.diapersUsed++;
-                    stats.wipesUsed++;
+                    _s.stats.diapersUsed++;
+                    _s.stats.wipesUsed++;
                     stats.diaperChanges++;
                     if (b.asleep)
                     {
                         b.asleep = false;
                         Emit("Diaper changed - and the baby woke up");
                     }
-                    else Emit("Diaper changed");
+                    else Emit(byHelper ? "Grandma changed the diaper" : "Diaper changed");
                     break;
                 case ActionType.PutBabyToSleep:
                     if (b.tension < _t.tensionBlocksSleep && (b.cryCauses & ~CryCause.Overtired) == CryCause.None)
                     {
                         b.asleep = true;
                         stats.babyNaps++;
-                        Emit("The baby is asleep");
+                        Emit(byHelper ? "Grandma got the baby to sleep" : "The baby is asleep");
                     }
                     else Emit("The baby wouldn't settle");
                     break;
                 case ActionType.Play:
-                    Emit("Playtime done");
+                    if (!byHelper) Emit("Playtime done");
                     break;
                 case ActionType.Eat:
                     p.hunger = 0;
@@ -450,15 +554,109 @@ namespace BabyChampion.Simulation
 
         bool ActionIs(ActionType type) => _s.parent.action != null && _s.parent.action.type == type;
 
-        bool IsFeeding => ActionIs(ActionType.Breastfeed) || ActionIs(ActionType.BottleFeed);
+        /// <summary>The parent or the grandparent is doing this for the baby.</summary>
+        bool CareIs(ActionType type) => ActionIs(type) || (_s.helper.action != null && _s.helper.action.type == type);
+
+        bool IsFeeding => CareIs(ActionType.Breastfeed) || CareIs(ActionType.BottleFeed);
+
+        /// <summary>Actions done with or for the baby; the grandparent takes these over during a Call for help.</summary>
+        static bool IsBabyCare(ActionType type)
+        {
+            switch (type)
+            {
+                case ActionType.Breastfeed:
+                case ActionType.BottleFeed:
+                case ActionType.Burp:
+                case ActionType.ChangeDiaper:
+                case ActionType.Soothe:
+                case ActionType.PutBabyToSleep:
+                case ActionType.Play:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- call for help
+
+        void CallForHelp()
+        {
+            var h = _s.helper;
+            h.present = true;
+            h.calls++;
+            h.untilMinute = _s.minute + _t.helpMinutes;
+            h.action = null;
+            _s.stats.helpCalls++;
+            if (_s.parent.action != null && IsBabyCare(_s.parent.action.type))
+            {
+                Emit($"Stopped {_s.parent.action.type}");
+                _s.parent.action = null;
+            }
+            Emit($"Grandma is here! She looks after the baby until {FormatClock(h.untilMinute, StartHour)}");
+        }
+
+        /// <summary>
+        /// The grandparent's care while help lasts: one task at a time, most urgent first, with the
+        /// same durations and effects as the parent's. Feeds use a bottle: formula from home, or
+        /// expressed milk when breastfeeding. Diaper changes use the home's supplies.
+        /// </summary>
+        void UpdateHelper()
+        {
+            var h = _s.helper;
+            if (!h.present) return;
+            if (_s.minute >= h.untilMinute - 1e-9)
+            {
+                h.present = false;
+                h.action = null;
+                Emit("Grandma went home");
+                return;
+            }
+
+            var b = _s.baby;
+            if (h.action != null && h.action.type == ActionType.Soothe && b.tension < 15) h.action = null;
+            if (h.action == null) h.action = ChooseHelperTask(b);
+            if (h.action != null) ProgressAction(h.action, byHelper: true);
+        }
+
+        ActiveAction ChooseHelperTask(BabyState b)
+        {
+            var supplies = _s.supplies;
+            ActiveAction Task(ActionType type, double minutes) => new ActiveAction { type = type, durationMinutes = minutes, startHunger = b.hunger };
+
+            if (!b.asleep && (b.needsBurp || b.gas)) return Task(ActionType.Burp, _t.burpMinutes);
+            if (!b.asleep && b.hunger >= 50)
+            {
+                bool expressedMilk = _s.feeding == FeedingChoice.Breast;
+                if (expressedMilk || supplies.bottlesReady > 0 || supplies.formula > 0)
+                {
+                    if (!expressedMilk)
+                    {
+                        if (supplies.bottlesReady > 0) supplies.bottlesReady--;
+                        else
+                        {
+                            supplies.formula--;
+                            _s.stats.formulaUsed++;
+                        }
+                    }
+                    return Task(ActionType.BottleFeed, _t.bottleFeedMinutes);
+                }
+            }
+            bool soiled = b.diaper == DiaperState.Dirty || (b.diaper == DiaperState.Wet && !b.asleep);
+            if (soiled && supplies.diapers > 0 && supplies.wipes > 0) return Task(ActionType.ChangeDiaper, _t.changeDiaperMinutes);
+            if (b.asleep) return null;
+            if (b.tension >= 40) return Task(ActionType.Soothe, 0);
+            if (b.tiredness >= 50 && (b.cryCauses & ~CryCause.Overtired) == CryCause.None) return Task(ActionType.PutBabyToSleep, _t.putToSleepMinutes);
+            if (_s.month >= _t.boredomFromMonth && b.boredom >= 45) return Task(ActionType.Play, _t.playMinutes);
+            return null;
+        }
 
         // ---------------------------------------------------------------- rules
 
         void UpdateBaby()
         {
             var b = _s.baby;
-            bool playing = ActionIs(ActionType.Play);
-            bool engaged = IsFeeding || ActionIs(ActionType.Soothe) || ActionIs(ActionType.PutBabyToSleep);
+            bool playing = CareIs(ActionType.Play);
+            bool engaged = IsFeeding || CareIs(ActionType.Soothe) || CareIs(ActionType.PutBabyToSleep);
 
             b.hunger += _t.hungerCryThreshold / _band.hungerTo70Minutes;
 
@@ -524,7 +722,7 @@ namespace BabyChampion.Simulation
             b.boredom = Clamp(b.boredom);
 
             // Self-soothing (from month 6): a calm, tired baby falls asleep alone.
-            if (!b.asleep && _s.month >= _t.selfSootheFromMonth && _s.parent.action == null
+            if (!b.asleep && _s.month >= _t.selfSootheFromMonth && _s.parent.action == null && _s.helper.action == null
                 && b.tension < 20 && b.tiredness >= 70 && (b.cryCauses & ~CryCause.Overtired) == CryCause.None)
             {
                 b.asleep = true;
@@ -548,17 +746,17 @@ namespace BabyChampion.Simulation
             // A cause being dealt with (feed, change, burp) no longer makes the baby cry.
             if (((b.diaper == DiaperState.Wet && b.soiledMinutes >= _t.wetCryAfterMinutes)
                  || (b.diaper == DiaperState.Dirty && b.soiledMinutes >= _t.dirtyCryAfterMinutes))
-                && !ActionIs(ActionType.ChangeDiaper)) causes |= CryCause.Diaper;
-            if (b.gas && !ActionIs(ActionType.Burp)) causes |= CryCause.Gas;
-            if (b.tension >= _t.tensionCryThreshold && !ActionIs(ActionType.Soothe)) causes |= CryCause.Upset;
+                && !CareIs(ActionType.ChangeDiaper)) causes |= CryCause.Diaper;
+            if (b.gas && !CareIs(ActionType.Burp)) causes |= CryCause.Gas;
+            if (b.tension >= _t.tensionCryThreshold && !CareIs(ActionType.Soothe)) causes |= CryCause.Upset;
             if (b.asleep && causes != CryCause.None)
             {
                 b.asleep = false;
                 Emit("The baby woke up");
             }
             // Being fed or settled calms an overtired baby.
-            if (!b.asleep && b.tiredness >= _t.overtiredThreshold && !ActionIs(ActionType.PutBabyToSleep) && !IsFeeding) causes |= CryCause.Overtired;
-            if (!b.asleep && _s.month >= _t.boredomFromMonth && b.boredom >= _t.boredomCryThreshold && !ActionIs(ActionType.Play)) causes |= CryCause.Bored;
+            if (!b.asleep && b.tiredness >= _t.overtiredThreshold && !CareIs(ActionType.PutBabyToSleep) && !IsFeeding) causes |= CryCause.Overtired;
+            if (!b.asleep && _s.month >= _t.boredomFromMonth && b.boredom >= _t.boredomCryThreshold && !CareIs(ActionType.Play)) causes |= CryCause.Bored;
 
             bool wasCrying = b.Crying;
             b.cryCauses = causes;
@@ -577,7 +775,7 @@ namespace BabyChampion.Simulation
                 if (!wasCrying) Emit($"The baby is crying: {CryHints.Describe(causes)}");
 
                 WakeParent("The crying woke you up");
-                if (ActionIs(ActionType.Rest))
+                if (ActionIs(ActionType.Rest) && !_s.helper.present)
                 {
                     Emit("The crying interrupted your rest");
                     _s.parent.action = null;
@@ -592,7 +790,8 @@ namespace BabyChampion.Simulation
 
         void WakeParent(string text)
         {
-            if (!ActionIs(ActionType.Sleep)) return;
+            // While the grandparent helps, the parent sleeps through.
+            if (!ActionIs(ActionType.Sleep) || _s.helper.present) return;
             _s.parent.action = null;
             Emit(text);
         }
@@ -679,21 +878,62 @@ namespace BabyChampion.Simulation
         void CheckFailure()
         {
             if (_s.parent.energy <= 0) Fail(FailReason.ParentCollapsed, "You collapsed from exhaustion.");
-            else if (_s.baby.cryStreakMinutes > _t.maxContinuousCryMinutes) Fail(FailReason.ContinuousCrying, "The baby cried for too long without a break.");
-            else if (_s.stats.cryingMinutes > _t.cryingBudgetMinutes) Fail(FailReason.CryingBudget, "Too much crying today.");
+            else if (_s.baby.cryStreakMinutes > MaxContinuousCryMinutes) Fail(FailReason.ContinuousCrying, "The baby cried for too long without a break.");
+            else if (_s.stats.cryingMinutes > CryingBudgetMinutes) Fail(FailReason.CryingBudget, "Too much crying today.");
+            else if (_s.level?.failConditions != null)
+                foreach (var condition in _s.level.failConditions)
+                    if (Broken(condition))
+                    {
+                        Fail(FailReason.LevelRule, condition.text);
+                        break;
+                    }
         }
+
+        bool Broken(FailCondition condition)
+        {
+            switch (condition.type)
+            {
+                case FailConditionType.EnergyAtOrBelow: return _s.parent.energy <= condition.value;
+                case FailConditionType.DiaperRash: return _s.baby.rash;
+                default: return false;
+            }
+        }
+
+        /// <summary>The time limit is reached: a free day is survived; a level is completed when every goal is met.</summary>
+        void TimeUp()
+        {
+            var missed = new List<string>();
+            foreach (var goal in Goals)
+                if (!goal.Met) missed.Add(goal.Text);
+            if (missed.Count > 0)
+            {
+                Fail(FailReason.ObjectiveMissed, "Time's up, but not every goal was met: " + string.Join(", ", missed));
+                return;
+            }
+            _s.outcome = Outcome.Survived;
+            _s.parent.action = null;
+            _s.helper.present = false;
+            _s.helper.action = null;
+            Emit(_s.level == null ? "Morning! You made it through the day." : $"Morning! {_s.level.title}: level complete!");
+        }
+
+        /// <summary>Why the level failed, in words (the last failure message), or null.</summary>
+        public string FailText { get; private set; }
 
         void Fail(FailReason reason, string text)
         {
             _s.outcome = Outcome.Failed;
             _s.failReason = reason;
+            FailText = text;
             _s.parent.action = null;
+            _s.helper.present = false;
+            _s.helper.action = null;
             Emit(text);
         }
 
         void Emit(string text)
         {
-            var e = new SimEvent(_s.minute, text);
+            var e = new SimEvent(_s.minute, text, StartHour);
             _recentEvents.Add(e);
             if (_recentEvents.Count > MaxRecentEvents) _recentEvents.RemoveAt(0);
             EventRaised?.Invoke(e);

@@ -1,0 +1,88 @@
+/* Baby Champion menus (greybox): title, save slots, baby setup, level map. Reference 1280x720, matched on height. */
+
+.menu-root { background-color: rgb(250, 236, 214); }
+.menu-screen {
+    position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+    padding: 24px 40px; color: rgb(40, 34, 44); font-size: 18px;
+}
+
+.menu-panel {
+    background-color: rgba(255, 252, 246, 0.96); border-radius: 22px; padding: 22px 28px;
+    border-width: 2px; border-color: rgba(120, 96, 80, 0.3);
+}
+.menu-panel--title { align-self: center; margin-top: 90px; width: 640px; align-items: center; }
+.menu-panel--setup { align-self: center; width: 900px; }
+
+.menu-logo { font-size: 64px; -unity-font-style: bold; color: rgb(230, 120, 90); margin-bottom: 8px; }
+.menu-tagline { font-size: 20px; white-space: normal; -unity-text-align: middle-center; margin-bottom: 24px; }
+.menu-heading { font-size: 32px; -unity-font-style: bold; margin-left: 16px; flex-grow: 1; }
+.menu-text { font-size: 17px; white-space: normal; }
+.menu-note { font-size: 14px; color: rgb(110, 98, 100); white-space: normal; margin-top: 8px; }
+.menu-note--center { -unity-text-align: middle-center; margin-top: 18px; }
+.menu-warning { font-size: 16px; color: rgb(180, 50, 40); white-space: normal; margin-top: 6px; }
+
+.menu-header { flex-direction: row; align-items: center; margin-bottom: 16px; }
+.menu-row { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.menu-row--end { justify-content: flex-end; margin-top: 16px; }
+
+.menu-button {
+    min-width: 120px; height: 60px; margin: 4px; padding: 0 16px;
+    font-size: 19px; -unity-font-style: bold; border-radius: 14px; border-width: 2px;
+    background-color: rgb(255, 236, 205); border-color: rgb(200, 150, 110); color: rgb(60, 45, 40);
+}
+.menu-button:hover { background-color: rgb(255, 225, 180); }
+.menu-button--primary { background-color: rgb(120, 190, 120); border-color: rgb(70, 140, 70); color: white; }
+.menu-button--primary:hover { background-color: rgb(100, 175, 100); }
+.menu-button--danger { background-color: rgb(230, 110, 100); border-color: rgb(170, 60, 50); color: white; }
+.menu-button--big { min-width: 220px; height: 76px; font-size: 26px; }
+
+/* ---------------------------------------------------------------- save slots */
+.slot-row { flex-direction: row; justify-content: center; }
+.slot-card {
+    width: 360px; min-height: 300px; margin: 0 10px; padding: 18px;
+    background-color: rgba(255, 252, 246, 0.96); border-radius: 20px;
+    border-width: 2px; border-color: rgba(120, 96, 80, 0.3);
+}
+.slot-number { font-size: 15px; color: rgb(140, 100, 70); -unity-font-style: bold; }
+.slot-name { font-size: 32px; -unity-font-style: bold; margin: 6px 0; }
+.slot-name--empty { color: rgb(170, 160, 160); }
+.slot-swatch { width: 48px; height: 48px; border-radius: 24px; border-width: 2px; border-color: rgba(60, 50, 60, 0.4); margin-top: 6px; }
+
+/* ---------------------------------------------------------------- baby setup */
+.setup-row { flex-direction: row; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+.setup-label { width: 120px; font-size: 20px; -unity-font-style: bold; }
+.setup-name { width: 420px; font-size: 24px; }
+.setup-name > .unity-text-field__input { height: 54px; font-size: 24px; border-radius: 10px; padding: 0 10px; }
+.menu-choice {
+    min-width: 140px; height: 58px; margin: 4px; font-size: 19px; border-radius: 14px;
+    border-width: 2px; border-color: rgb(200, 180, 160); background-color: rgb(255, 250, 240);
+}
+.menu-choice--selected { background-color: rgb(255, 214, 150); border-color: rgb(200, 140, 60); -unity-font-style: bold; }
+.menu-swatch { width: 58px; height: 58px; margin: 4px; border-radius: 29px; border-width: 3px; border-color: rgba(60, 50, 60, 0.25); }
+.menu-swatch--selected { border-width: 6px; border-color: rgb(60, 50, 60); }
+
+/* ---------------------------------------------------------------- level map */
+.menu-stars { flex-direction: row; align-items: center; }
+.menu-stars .star { width: 40px; height: 40px; }
+.menu-stars .menu-text { font-size: 26px; -unity-font-style: bold; margin-left: 4px; }
+.map-scroll { flex-grow: 1; }
+.chapter {
+    margin-bottom: 14px; padding: 12px 16px; border-radius: 18px;
+    background-color: rgba(255, 252, 246, 0.9); border-width: 2px; border-color: rgba(120, 96, 80, 0.25);
+}
+.chapter-title { font-size: 22px; -unity-font-style: bold; margin-bottom: 6px; }
+.chapter-levels { flex-direction: row; flex-wrap: wrap; }
+.level-tile {
+    width: 150px; height: 128px; margin: 5px; padding: 6px; border-radius: 16px;
+    border-width: 3px; border-color: rgb(200, 150, 110); background-color: rgb(255, 244, 228);
+    align-items: center; justify-content: flex-start;
+}
+.level-tile:hover { background-color: rgb(255, 230, 190); }
+.level-tile:disabled { background-color: rgb(232, 228, 224); border-color: rgb(200, 196, 192); opacity: 1; }
+.level-tile--next { border-color: rgb(70, 140, 70); border-width: 5px; }
+.level-number { font-size: 30px; -unity-font-style: bold; }
+.level-title { font-size: 15px; white-space: normal; -unity-text-align: middle-center; }
+.level-tile:disabled .level-number, .level-tile:disabled .level-title { color: rgb(150, 145, 142); }
+.level-state { font-size: 13px; color: rgb(140, 130, 130); margin-top: 2px; }
+.level-stars { flex-direction: row; margin-top: 4px; }
+.level-stars .star { width: 26px; height: 26px; margin: 0 1px; }

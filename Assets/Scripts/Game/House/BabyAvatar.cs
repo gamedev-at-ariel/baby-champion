@@ -17,6 +17,8 @@ namespace BabyChampion.Game
 
         [SerializeField] Transform body;
         [SerializeField] Renderer head;
+        /// <summary>The onesie, coloured by the chosen outfit.</summary>
+        [SerializeField] Renderer torso;
         [SerializeField] Transform mouth;
         [SerializeField] Transform leftHand;
         [SerializeField] Transform rightHand;
@@ -35,13 +37,34 @@ namespace BabyChampion.Game
         public CryHint Hint { get; private set; }
         public bool Crying { get; private set; }
         public bool Asleep { get; private set; }
+        public Color OutfitColor { get; private set; }
 
         void Awake()
         {
+            // Runs once, also when SetLook comes first (HouseGame.Awake may run before this one).
+            if (_block != null) return;
             _block = new MaterialPropertyBlock();
             if (leftHand != null) _leftRest = leftHand.localPosition;
             if (rightHand != null) _rightRest = rightHand.localPosition;
             if (mouth != null) _mouthScale = mouth.localScale;
+            OutfitColor = torso != null ? torso.sharedMaterial.color : Color.white;
+        }
+
+        /// <summary>Applies the appearance chosen at the baby setup.</summary>
+        public void SetLook(Color skinColor, Color outfitColor)
+        {
+            if (_block == null) Awake();
+            skin = skinColor;
+            OutfitColor = outfitColor;
+            var block = new MaterialPropertyBlock();
+            block.SetColor(BaseColor, skinColor);
+            foreach (var hand in new[] { leftHand, rightHand })
+                if (hand != null && hand.TryGetComponent<Renderer>(out var r)) r.SetPropertyBlock(block);
+            if (torso != null)
+            {
+                block.SetColor(BaseColor, outfitColor);
+                torso.SetPropertyBlock(block);
+            }
         }
 
         public void Show(Transform anchor, BabyDisplayPose pose, BabyView baby)

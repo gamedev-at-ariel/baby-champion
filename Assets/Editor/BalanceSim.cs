@@ -33,17 +33,20 @@ namespace BabyChampion.Editor
         {
             var report = new Report();
             var botList = bots == "all" ? BalanceRunner.BotNames : bots.Split(',').Select(b => b.Trim().ToLowerInvariant()).ToArray();
-            int month = BalanceRunner.MonthForLevel(level);
+            var definition = config.levels?.Find(level);
+            string what = definition != null
+                ? $"level {level} '{definition.title}'"
+                : $"level {level} (not built yet: a free day of month {BalanceRunner.MonthForLevel(level)})";
             Directory.CreateDirectory(OutputFolder);
-            report.Lines.Add($"Balance simulator: level {level} (month {month}), feeding {feeding}, {runs} runs from seed {seed}");
+            report.Lines.Add($"Balance simulator: {what}, feeding {feeding}, {runs} runs from seed {seed}");
 
             var summaries = new StringBuilder("bot,level,feeding,runs,success_rate,target,target_met\n");
             foreach (var bot in botList)
             {
-                var results = BalanceRunner.Run(config, month, feeding, bot, runs, seed);
+                var results = BalanceRunner.Run(config, level, feeding, bot, runs, seed);
                 string prefix = $"{OutputFolder}/level{level}-{feeding.ToString().ToLowerInvariant()}-{bot}";
                 File.WriteAllText(prefix + "-runs.csv", BalanceRunner.RunsCsv(results));
-                File.WriteAllText(prefix + "-energy.csv", BalanceRunner.EnergyCsv(results, config.tuning.dayStartHour));
+                File.WriteAllText(prefix + "-energy.csv", BalanceRunner.EnergyCsv(results));
                 report.Files.Add(prefix + "-runs.csv");
                 report.Files.Add(prefix + "-energy.csv");
 
@@ -83,7 +86,7 @@ namespace BabyChampion.Editor
 
         [CliCommand("bc_balance_sim", "Run the Baby Champion balance simulator (bots: greedy, sloppy, idle, all) and write artifacts/balance/")]
         public static string RunInEditor(
-            [CliArg("level", "Level number (month = level - 1)")] int level = 1,
+            [CliArg("level", "Level number: its level definition, or a free day of month level - 1 when not built yet")] int level = 1,
             [CliArg("bot", "greedy, sloppy, idle, a comma list, or all")] string bot = "all",
             [CliArg("runs", "Runs per bot")] int runs = 500,
             [CliArg("seed", "First seed; run i uses seed + i")] int seed = 1,

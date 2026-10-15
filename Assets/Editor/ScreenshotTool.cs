@@ -9,8 +9,9 @@ using UnityEngine;
 namespace BabyChampion.Editor
 {
     /// <summary>
-    /// Captures every room of the house with the HUD, the radial menu and the phone, at phone
-    /// (2400x1080) and desktop (1920x1080) resolutions, into artifacts/screens/ (3-plan.md Section 2).
+    /// Captures every room of the house with the HUD, the radial menu, the phone, the level briefing,
+    /// the success and failure screens, and the menus (title, save slots, baby setup, level map), at
+    /// phone (2400x1080) and desktop (1920x1080) resolutions, into artifacts/screens/ (3-plan.md Section 2).
     /// It needs graphics and Play mode, so it opens the House scene, enters Play mode, captures,
     /// and then exits (batch) or leaves Play mode (open Editor).
     /// CLI:    tools/unity.sh -executeMethod BabyChampion.Editor.ScreenshotTool.Run   (no -quit, no -nographics)
@@ -54,7 +55,7 @@ namespace BabyChampion.Editor
             }
         }
 
-        [CliCommand("bc_screenshots", "Capture every room, the HUD, the radial menu and the phone at phone and desktop resolutions into artifacts/screens/ (enters and leaves Play mode; poll bc_screenshots_status)")]
+        [CliCommand("bc_screenshots", "Capture every room, the HUD, radial menu, phone, level briefing, results and menus at phone and desktop resolutions into artifacts/screens/ (enters and leaves Play mode; poll bc_screenshots_status)")]
         public static string RunInEditor()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play mode first");
@@ -105,7 +106,7 @@ namespace BabyChampion.Editor
         static void Finish(string error, int count)
         {
             State = "done";
-            int expected = ExpectedCount();
+            int expected = _capture != null ? _capture.Expected : -1;
             bool ok = error == null && count == expected;
             string result = ok
                 ? $"ok: {count} images in {OutputFolder}/"
@@ -119,10 +120,5 @@ namespace BabyChampion.Editor
             else EditorApplication.ExitPlaymode();
         }
 
-        static int ExpectedCount()
-        {
-            int rooms = UnityEngine.Object.FindObjectsByType<Room>(FindObjectsSortMode.None).Length;
-            return ScreenshotCapture.DefaultSizes.Length * (rooms + 2);
-        }
     }
 }

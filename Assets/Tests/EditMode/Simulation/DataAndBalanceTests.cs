@@ -108,18 +108,24 @@ namespace BabyChampion.Tests.EditMode
             foreach (var file in report.Files) FileAssert.Exists(file);
         }
 
-        /// <summary>3-plan.md M1: Greedy survives at least 95%, Idle fails 100%, Sloppy is in between (Section 6: 50-80%).</summary>
-        [TestCase(FeedingChoice.Both)]
-        [TestCase(FeedingChoice.Formula)]
-        public void NewbornDay_MeetsBalanceTargets(FeedingChoice feeding)
+        /// <summary>
+        /// 3-plan.md Section 6 (chapter 1) and M3: Greedy earns at least 1 star in 95% of runs, Idle never,
+        /// Sloppy in 50-80%. Level 1 is the newborn day; Level 2 the night shift.
+        /// </summary>
+        [TestCase(1, FeedingChoice.Both)]
+        [TestCase(1, FeedingChoice.Formula)]
+        [TestCase(2, FeedingChoice.Both)]
+        [TestCase(2, FeedingChoice.Formula)]
+        public void Levels_MeetBalanceTargets(int level, FeedingChoice feeding)
         {
             var config = DataAssets.LoadConfig();
             var rates = new Dictionary<string, double>();
             foreach (var bot in BalanceRunner.BotNames)
             {
-                var results = BalanceRunner.Run(config, month: 0, feeding, bot, runs: 200, firstSeed: 1000);
+                var results = BalanceRunner.Run(config, level, feeding, bot, runs: 200, firstSeed: 1000);
+                Assert.IsTrue(results.All(r => r.level == level), "the level definition was not used");
                 rates[bot] = BalanceRunner.SuccessRate(results);
-                Assert.IsTrue(BalanceRunner.TargetFor(bot, 1).Met(rates[bot]), $"{bot}: {rates[bot]:P1}, target {BalanceRunner.TargetFor(bot, 1)}");
+                Assert.IsTrue(BalanceRunner.TargetFor(bot, level).Met(rates[bot]), $"{bot}: {rates[bot]:P1}, target {BalanceRunner.TargetFor(bot, level)}");
             }
             Assert.That(rates["sloppy"], Is.LessThan(rates["greedy"]).And.GreaterThan(rates["idle"]));
         }

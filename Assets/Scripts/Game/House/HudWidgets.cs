@@ -141,4 +141,113 @@ namespace BabyChampion.Game
             _value.text = value.ToString("0");
         }
     }
+
+    /// <summary>A five-pointed star, filled when earned (drawn, so it needs no font glyph).</summary>
+    public sealed class StarIcon : VisualElement
+    {
+        public static readonly Color Gold = new Color(1f, 0.76f, 0.15f);
+        public static readonly Color Empty = new Color(0.85f, 0.82f, 0.8f);
+
+        bool _filled;
+
+        public bool Filled
+        {
+            get => _filled;
+            set
+            {
+                if (_filled == value) return;
+                _filled = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        public StarIcon(bool filled = false)
+        {
+            _filled = filled;
+            pickingMode = PickingMode.Ignore;
+            AddToClassList("star");
+            generateVisualContent += Draw;
+        }
+
+        void Draw(MeshGenerationContext context)
+        {
+            var r = contentRect;
+            float outer = Mathf.Min(r.width, r.height) * 0.48f;
+            if (outer <= 1f) return;
+            float inner = outer * 0.45f;
+            var c = r.center + new Vector2(0, outer * 0.06f);
+            var p = context.painter2D;
+            p.fillColor = _filled ? Gold : Empty;
+            p.strokeColor = _filled ? new Color(0.7f, 0.45f, 0.05f) : new Color(0.6f, 0.56f, 0.54f);
+            p.lineWidth = 2f;
+            p.lineJoin = LineJoin.Round;
+            p.BeginPath();
+            for (int i = 0; i < 10; i++)
+            {
+                float angle = -Mathf.PI / 2 + i * Mathf.PI / 5;
+                float radius = i % 2 == 0 ? outer : inner;
+                var point = c + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                if (i == 0) p.MoveTo(point);
+                else p.LineTo(point);
+            }
+            p.ClosePath();
+            p.Fill();
+            p.Stroke();
+        }
+    }
+
+    /// <summary>A rounded box with a tick when done (drawn, so it needs no font glyph).</summary>
+    public sealed class CheckMark : VisualElement
+    {
+        bool _done;
+
+        public bool Done
+        {
+            get => _done;
+            set
+            {
+                if (_done == value) return;
+                _done = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        public CheckMark()
+        {
+            pickingMode = PickingMode.Ignore;
+            AddToClassList("check");
+            generateVisualContent += Draw;
+        }
+
+        void Draw(MeshGenerationContext context)
+        {
+            var r = contentRect;
+            float s = Mathf.Min(r.width, r.height);
+            if (s <= 1f) return;
+            var c = r.center;
+            var p = context.painter2D;
+            float h = s * 0.42f;
+            p.fillColor = _done ? UrgencyShape.CalmColor : new Color(1f, 1f, 1f, 0.9f);
+            p.strokeColor = _done ? new Color(0.2f, 0.45f, 0.25f) : new Color(0.55f, 0.5f, 0.5f);
+            p.lineWidth = 2f;
+            p.BeginPath();
+            p.MoveTo(c + new Vector2(-h, -h));
+            p.LineTo(c + new Vector2(h, -h));
+            p.LineTo(c + new Vector2(h, h));
+            p.LineTo(c + new Vector2(-h, h));
+            p.ClosePath();
+            p.Fill();
+            p.Stroke();
+            if (!_done) return;
+            p.strokeColor = Color.white;
+            p.lineWidth = Mathf.Max(2f, s * 0.14f);
+            p.lineCap = LineCap.Round;
+            p.lineJoin = LineJoin.Round;
+            p.BeginPath();
+            p.MoveTo(c + new Vector2(-h * 0.55f, 0));
+            p.LineTo(c + new Vector2(-h * 0.1f, h * 0.45f));
+            p.LineTo(c + new Vector2(h * 0.6f, -h * 0.45f));
+            p.Stroke();
+        }
+    }
 }

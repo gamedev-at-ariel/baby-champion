@@ -73,12 +73,14 @@ Step 'Data validation'
 if ((Invoke-Unity 'validation' @('-nographics', '-quit', '-executeMethod', 'BabyChampion.Editor.DataValidator.Run')) -ne 0) { Fail 'data validation' }
 Get-Content 'artifacts/validation.txt'
 
-# Newborn day (level 1) with every bot; fails when a 3-plan.md Section 6 target is missed.
+# Every built level with every bot; fails when a 3-plan.md Section 6 target is missed.
 # Breastfeeding plays like "both", so formula is the only other case worth running.
-foreach ($feeding in 'both', 'formula') {
-    Step "Balance simulator (level 1, $feeding)"
-    if ((Invoke-Unity "balance-$feeding" @('-nographics', '-quit', '-executeMethod', 'BabyChampion.Editor.BalanceSim.Run', '-level', '1', '-bot', 'all', '-runs', '500', '-seed', '1', '-feeding', $feeding)) -ne 0) { Fail "balance targets ($feeding; see artifacts/balance/)" }
-    Select-String -Path "artifacts/logs/balance-$feeding.log" -Pattern '\[BalanceSim\] (.*)' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -Unique
+foreach ($level in '1', '2') {
+    foreach ($feeding in 'both', 'formula') {
+        Step "Balance simulator (level $level, $feeding)"
+        if ((Invoke-Unity "balance-$level-$feeding" @('-nographics', '-quit', '-executeMethod', 'BabyChampion.Editor.BalanceSim.Run', '-level', $level, '-bot', 'all', '-runs', '500', '-seed', '1', '-feeding', $feeding)) -ne 0) { Fail "balance targets (level $level, $feeding; see artifacts/balance/)" }
+        Select-String -Path "artifacts/logs/balance-$level-$feeding.log" -Pattern '\[BalanceSim\] (.*)' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -Unique
+    }
 }
 
 # Every room, the HUD, the radial menu and the phone at phone and desktop resolutions, for review.

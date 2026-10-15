@@ -7,9 +7,10 @@ namespace BabyChampion.Game
 {
     /// <summary>
     /// The in-level HUD (design Section 15.3), built with UI Toolkit: baby need icons (shape-coded),
-    /// parent bars with Joy as a glow around the portrait, clock, crying budget, money, supplies,
-    /// phone (ordering), pause, the current action with Stop, the radial action menu, edge
-    /// indicators for off-screen events, and the end-of-day panel.
+    /// parent bars with Joy as a glow around the portrait, clock, objective checklist, crying budget,
+    /// money, supplies, phone (ordering and Call for help), pause, the current action with Stop, the
+    /// radial action menu, edge indicators for off-screen events, the tutorial coach, the level
+    /// briefing, and the success (stars) and failure screens.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class Hud : MonoBehaviour
@@ -47,7 +48,10 @@ namespace BabyChampion.Game
         [SerializeField] StyleSheet styleSheet;
 
         VisualElement _root;
-        Label _clock, _objective, _speed, _cryBudget;
+        Label _clock, _objective, _speed, _cryBudget, _help;
+        VisualElement _goals;
+        readonly List<(CheckMark mark, Label label)> _goalRows = new List<(CheckMark, Label)>();
+        Label _coach;
         readonly Dictionary<Need, NeedWidget> _needs = new Dictionary<Need, NeedWidget>();
         Label _money;
         Button _phoneButton, _pauseButton;
@@ -68,11 +72,16 @@ namespace BabyChampion.Game
 
         VisualElement _phoneLayer, _phoneList;
         VisualElement _pauseLayer, _pauseBody;
-        VisualElement _outcomeLayer;
-        Label _outcomeTitle, _outcomeText;
+        VisualElement _outcomeLayer, _outcomeBody;
+        VisualElement _briefingLayer, _briefingBody;
+        Button _helpButton;
+        Label _helpReason;
+        readonly List<StarIcon> _outcomeStars = new List<StarIcon>();
+        readonly List<Button> _outcomeButtons = new List<Button>();
+        readonly List<System.Action> _outcomeActions = new List<System.Action>();
         EdgeIndicator _babyIndicator, _doorIndicator;
         VisualElement _tags;
-        Label _babyTag, _parentTag;
+        Label _babyTag, _parentTag, _helperTag;
         readonly List<(Interactable target, Label label, Vector3 offset)> _furnitureTags = new List<(Interactable, Label, Vector3)>();
 
         public HouseGame Game => game;
@@ -83,6 +92,15 @@ namespace BabyChampion.Game
         public bool PhoneOpen => _phoneLayer != null && _phoneLayer.style.display == DisplayStyle.Flex;
         public bool PauseMenuOpen => _pauseLayer != null && _pauseLayer.style.display == DisplayStyle.Flex;
         public bool OutcomeShown => _outcomeLayer != null && _outcomeLayer.style.display == DisplayStyle.Flex;
+        public bool BriefingShown => _briefingLayer != null && _briefingLayer.style.display == DisplayStyle.Flex;
+        /// <summary>The title of the success or failure screen.</summary>
+        public string OutcomeTitle { get; private set; }
+        /// <summary>Filled stars on the success screen.</summary>
+        public int OutcomeStars => _outcomeStars.FindAll(star => star.Filled).Count;
+        public IReadOnlyList<Button> OutcomeButtons => _outcomeButtons;
+        public string CoachText => _coach != null && _coach.style.display == DisplayStyle.Flex ? _coach.text : "";
+        public string ObjectiveText => _objective?.text;
+        public Button HelpButton => _helpButton;
         public string ClockText => _clock?.text;
         public bool BabyIndicatorVisible => _babyIndicator != null && _babyIndicator.Root.style.display == DisplayStyle.Flex;
         public bool DoorIndicatorVisible => _doorIndicator != null && _doorIndicator.Root.style.display == DisplayStyle.Flex;
@@ -156,11 +174,15 @@ namespace BabyChampion.Game
             _furnitureTags.Clear();
             _babyTag = Text(_tags, "tag tag--baby", "Baby");
             _parentTag = Text(_tags, "tag tag--you", "You");
+            _helperTag = Text(_tags, "tag tag--helper", "Grandma");
+            Hide(_helperTag);
 
             var clockPanel = Box(_root, "panel clock-panel", pickable: true);
             _clock = Text(clockPanel, "clock");
-            _objective = Text(clockPanel, "objective", "Free day: get through to 07:00");
+            _objective = Text(clockPanel, "objective objective--title", "Free day: get through to 07:00");
+            _goals = Box(clockPanel, "goals");
             _cryBudget = Text(clockPanel, "objective");
+            _help = Text(clockPanel, "speed");
             _speed = Text(clockPanel, "speed");
 
             var needs = Box(_root, "needs");
@@ -194,6 +216,8 @@ namespace BabyChampion.Game
 
             _ticker = Box(_root, "ticker");
             _toasts = Box(_root, "toasts");
+            _coach = Text(_root, "coach");
+            Hide(_coach);
 
             _babyIndicator = AddEdgeIndicator("Crying!", UrgencyShape.UrgentColor, "edge--crying", OpenBabyRadialFromIndicator);
             _doorIndicator = AddEdgeIndicator("Delivery", new Color(0.2f, 0.55f, 0.3f), "edge--delivery", null);
@@ -208,6 +232,7 @@ namespace BabyChampion.Game
             BuildPhone();
             BuildPause();
             BuildOutcome();
+            BuildBriefing();
         }
 
         void AddNeed(VisualElement parent, Need need, string name)
@@ -241,6 +266,16 @@ namespace BabyChampion.Game
             Text(modal, "modal-title", "Phone: order supplies");
             Text(modal, "modal-text", "Normal delivery takes 2 hours; express takes 30 minutes and costs extra.");
             _phoneList = Box(modal, "");
+            var helpRow = Box(modal, "order-row help-row");
+            var helpText = Box(helpRow, "help-text");
+            Text(helpText, "order-name", "Call Grandma");
+            Text(helpText, "modal-note", "She looks after the baby for 2 hours so you can rest. Once per level; the level then earns at most 2 stars.");
+            _helpButton = MakeButton(helpRow, "modal-button", "Call", () =>
+            {
+                game.Perform(HouseAction.Sim(ParentCommand.Of(ActionType.CallForHelp)));
+                ClosePhone();
+            });
+            _helpReason = Text(helpRow, "modal-note");
             MakeButton(modal, "modal-button", "Close", ClosePhone);
             Hide(_phoneLayer);
         }
@@ -257,13 +292,15 @@ namespace BabyChampion.Game
         void BuildOutcome()
         {
             _outcomeLayer = Box(_root, "modal-layer", pickable: true);
-            var modal = Box(_outcomeLayer, "modal", pickable: true);
-            _outcomeTitle = Text(modal, "modal-title");
-            _outcomeText = Text(modal, "modal-text");
-            var row = Box(modal, "row");
-            MakeButton(row, "modal-button", "Same day again", () => game.Restart(game.Seed));
-            MakeButton(row, "modal-button", "New day", () => game.Restart(System.Environment.TickCount));
+            _outcomeBody = Box(_outcomeLayer, "modal", pickable: true);
             Hide(_outcomeLayer);
+        }
+
+        void BuildBriefing()
+        {
+            _briefingLayer = Box(_root, "modal-layer", pickable: true);
+            _briefingBody = Box(_briefingLayer, "modal", pickable: true);
+            Hide(_briefingLayer);
         }
 
         static void Show(VisualElement e) => e.style.display = DisplayStyle.Flex;
@@ -395,6 +432,7 @@ namespace BabyChampion.Game
         {
             CloseRadial();
             RebuildPhone();
+            UpdatePhoneLabels(game.Sim);
             Show(_phoneLayer);
         }
 
@@ -448,9 +486,16 @@ namespace BabyChampion.Game
         {
             CloseRadial();
             _pauseBody.Clear();
-            MakeButton(_pauseBody, "modal-button", "Resume", () => SetPaused(false));
+            var top = Box(_pauseBody, "row");
+            MakeButton(top, "modal-button", "Resume", () => SetPaused(false));
+            if (game.Level != null)
+            {
+                MakeButton(top, "modal-button", "Restart level", () => game.RetryLevel());
+                MakeButton(top, "modal-button", "Level map", () => game.GoToMap());
+                Text(_pauseBody, "modal-text", $"Level {game.Level.number}: {game.Level.title}. {game.Level.objective}");
+            }
 
-            Text(_pauseBody, "modal-text", "Developer options (until levels arrive in M3):");
+            Text(_pauseBody, "modal-note", "Playtest options:");
             var speedRow = Box(_pauseBody, "row");
             Text(speedRow, "modal-text", "In-game minutes per second:");
             foreach (double speed in Speeds)
@@ -465,16 +510,19 @@ namespace BabyChampion.Game
                 if (selected) b.AddToClassList("modal-button--selected");
             }
 
-            var dayRow = Box(_pauseBody, "row");
-            MakeButton(dayRow, "modal-button", "Month -", () => RestartWith(game.Month - 1, game.Feeding));
-            Text(dayRow, "modal-text", $"Month {game.Month}");
-            MakeButton(dayRow, "modal-button", "Month +", () => RestartWith(game.Month + 1, game.Feeding));
-            MakeButton(dayRow, "modal-button", $"Feeding: {game.Feeding}", () => RestartWith(game.Month, (FeedingChoice)(((int)game.Feeding + 1) % 3)));
+            if (game.Level == null)
+            {
+                var dayRow = Box(_pauseBody, "row");
+                MakeButton(dayRow, "modal-button", "Month -", () => RestartWith(game.Month - 1, game.Feeding));
+                Text(dayRow, "modal-text", $"Month {game.Month}");
+                MakeButton(dayRow, "modal-button", "Month +", () => RestartWith(game.Month + 1, game.Feeding));
+                MakeButton(dayRow, "modal-button", $"Feeding: {game.Feeding}", () => RestartWith(game.Month, (FeedingChoice)(((int)game.Feeding + 1) % 3)));
 
-            var restartRow = Box(_pauseBody, "row");
-            MakeButton(restartRow, "modal-button", "Same day again", () => RestartWith(game.Month, game.Feeding, game.Seed));
-            MakeButton(restartRow, "modal-button", "New day", () => RestartWith(game.Month, game.Feeding));
-            Text(_pauseBody, "modal-text", $"Seed {game.Seed}.  Space pauses; Q/E or right-drag rotate; scroll zooms.");
+                var restartRow = Box(_pauseBody, "row");
+                MakeButton(restartRow, "modal-button", "Same day again", () => RestartWith(game.Month, game.Feeding, game.Seed));
+                MakeButton(restartRow, "modal-button", "New day", () => RestartWith(game.Month, game.Feeding));
+            }
+            Text(_pauseBody, "modal-note", $"Seed {game.Seed}.  Space pauses; Q/E or right-drag rotate; scroll zooms.");
         }
 
         void RestartWith(int month, FeedingChoice feeding, int? seed = null)
@@ -490,6 +538,11 @@ namespace BabyChampion.Game
             ClosePhone();
             _ticker?.Clear();
             _tickerLines.Clear();
+            if (_outcomeLayer != null) Hide(_outcomeLayer);
+            OutcomeTitle = null;
+            RebuildGoals();
+            if (game.WaitingToStart) ShowBriefing();
+            else if (_briefingLayer != null) Hide(_briefingLayer);
         }
 
         void OnSimEvent(SimEvent e)
@@ -535,8 +588,11 @@ namespace BabyChampion.Game
             var t = sim.Config.tuning;
 
             _clock.text = sim.ClockText;
-            _cryBudget.text = $"Crying today: {sim.CryingMinutesToday:0} of {t.cryingBudgetMinutes:0} min";
+            _cryBudget.text = $"Crying today: {sim.CryingMinutesToday:0} of {sim.CryingBudgetMinutes:0} min";
             _speed.text = sim.TimeMultiplier > 1 ? $"Sleeping: time x{sim.TimeMultiplier:0}" : "";
+            _help.text = sim.HelpActive ? $"Grandma helps until {CareSimulation.FormatClock(sim.HelpUntilMinute, sim.StartHour)}" : "";
+            UpdateGoals(sim);
+            UpdateCoach(sim);
 
             UpdateNeeds(sim, t);
             UpdateResources(sim, t);
@@ -551,6 +607,8 @@ namespace BabyChampion.Game
             SetShown(_pauseLayer, game.Paused);
             if (sim.Outcome != Outcome.Running && !OutcomeShown) ShowOutcome(sim);
             else if (sim.Outcome == Outcome.Running && OutcomeShown) Hide(_outcomeLayer);
+            if (game.WaitingToStart && !BriefingShown) ShowBriefing();
+            else if (!game.WaitingToStart && BriefingShown) Hide(_briefingLayer);
 
             Expire(_tickerLines);
             Expire(_toastLines);
@@ -608,7 +666,7 @@ namespace BabyChampion.Game
             if (sim.Month >= 6) AddSupply("Baby food", s.BabyFood, t.lowSupplyCount);
             AddSupply("Food (you)", s.AdultFood, 1);
             foreach (var d in sim.PendingDeliveries)
-                Text(_supplies, "delivery", $"Coming {CareSimulation.FormatClock(d.ArrivesAtMinute, t.dayStartHour)}: {d.Quantity} {SupplyName(d.Item).ToLowerInvariant()}");
+                Text(_supplies, "delivery", $"Coming {CareSimulation.FormatClock(d.ArrivesAtMinute, sim.StartHour)}: {d.Quantity} {SupplyName(d.Item).ToLowerInvariant()}");
         }
 
         void AddSupply(string name, int count, int low)
@@ -624,6 +682,9 @@ namespace BabyChampion.Game
                 var check = game.Check(HouseAction.Sim(command));
                 button.SetEnabled(check.Allowed);
             }
+            var help = game.Check(HouseAction.Sim(ParentCommand.Of(ActionType.CallForHelp)));
+            _helpButton.SetEnabled(help.Allowed);
+            _helpReason.text = help.Allowed ? "" : help.Reason;
         }
 
         void UpdateParent(CareSimulation sim, Tuning t)
@@ -714,11 +775,14 @@ namespace BabyChampion.Game
             if (game.Baby != null)
             {
                 bool crying = sim.Baby.Crying;
-                _babyTag.text = crying ? "Baby: crying!" : sim.Baby.Asleep ? "Baby (asleep)" : "Baby";
+                string name = game.BabyName;
+                _babyTag.text = crying ? $"{name}: crying!" : sim.Baby.Asleep ? $"{name} (asleep)" : name;
                 _babyTag.EnableInClassList("tag--crying", crying);
                 PlaceTag(_babyTag, game.Baby.transform.position + Vector3.up * 0.95f, camera, panel);
             }
             if (game.Parent != null) PlaceTag(_parentTag, game.Parent.transform.position + Vector3.up * 2.15f, camera, panel);
+            if (game.Helper != null && game.Helper.Visible) PlaceTag(_helperTag, game.Helper.transform.position + Vector3.up * 2.0f, camera, panel);
+            else Hide(_helperTag);
         }
 
         static float TopOf(Interactable target)
@@ -775,27 +839,189 @@ namespace BabyChampion.Game
             Show(indicator.Root);
         }
 
+        // ---------------------------------------------------------------- briefing
+
+        void ShowBriefing()
+        {
+            var level = game.Level;
+            if (level == null) return;
+            CloseRadial();
+            ClosePhone();
+            _briefingBody.Clear();
+            var sim = game.Sim;
+            Text(_briefingBody, "modal-kicker", $"Level {level.number}  -  Month {level.month + 1}");
+            Text(_briefingBody, "modal-title", level.title);
+            Text(_briefingBody, "modal-text", level.briefing);
+            Text(_briefingBody, "modal-subtitle", "Goals");
+            foreach (var goal in sim.Goals) GoalRow(_briefingBody, GoalLine(goal, preview: true), false);
+            bool nextDay = sim.StartHour * 60 + sim.LengthMinutes >= 24 * 60;
+            GoalRow(_briefingBody, $"Get through to {CareSimulation.FormatClock(sim.LengthMinutes, sim.StartHour)}{(nextDay ? " tomorrow morning" : "")}", false);
+            Text(_briefingBody, "modal-note",
+                $"Crying budget: {sim.CryingBudgetMinutes:0} in-game minutes in total, and no more than {sim.MaxContinuousCryMinutes:0} in a row. "
+                + "Stars: 1 for the goals, 2 if the baby stays content, 3 if you also end full of joy.");
+            if (level.tutorial) Text(_briefingBody, "modal-note", "Tips will appear at the bottom of the screen as you play.");
+            var row = Box(_briefingBody, "row row--end");
+            MakeButton(row, "modal-button modal-button--primary", "Start", () => game.BeginPlay());
+            Show(_briefingLayer);
+        }
+
+        /// <summary>Presses Start on the briefing (tests).</summary>
+        public void PressStart() => game.BeginPlay();
+
+        // ---------------------------------------------------------------- objectives and coach
+
+        void RebuildGoals()
+        {
+            if (_goals == null) return;
+            _goals.Clear();
+            _goalRows.Clear();
+            var level = game.Level;
+            _objective.text = level == null ? "Free day: get through to 07:00" : $"Level {level.number}: {level.title}";
+            if (game.Sim == null) return;
+            foreach (var goal in game.Sim.Goals) _goalRows.Add(GoalRow(_goals, GoalLine(goal, preview: false), goal.Met));
+        }
+
+        (CheckMark mark, Label label) GoalRow(VisualElement parent, string text, bool done)
+        {
+            var row = Box(parent, "goal");
+            var mark = new CheckMark { Done = done };
+            row.Add(mark);
+            var label = Text(row, "goal-text", text);
+            return (mark, label);
+        }
+
+        static string GoalLine(GoalProgress goal, bool preview)
+        {
+            if (goal.Type == GoalType.EnergyAtEnd) return preview ? goal.Text : $"{goal.Text} (now {goal.Current:0})";
+            if (goal.Target <= 1) return goal.Text;
+            return preview ? $"{goal.Text}: {goal.Target:0}" : $"{goal.Text}: {System.Math.Min(goal.Current, goal.Target):0} of {goal.Target:0}";
+        }
+
+        void UpdateGoals(CareSimulation sim)
+        {
+            var goals = sim.Goals;
+            if (goals.Count != _goalRows.Count)
+            {
+                RebuildGoals();
+                return;
+            }
+            for (int i = 0; i < goals.Count; i++)
+            {
+                _goalRows[i].mark.Done = goals[i].Met;
+                _goalRows[i].label.text = GoalLine(goals[i], preview: false);
+            }
+        }
+
+        void UpdateCoach(CareSimulation sim)
+        {
+            string hint = game.Level != null && game.Level.tutorial && !game.WaitingToStart ? TutorialCoach.Hint(sim, game.BabyCarried) : "";
+            _coach.text = hint;
+            SetShown(_coach, hint.Length > 0 && !RadialOpen);
+        }
+
+        // ---------------------------------------------------------------- end of a day or level
+
         void ShowOutcome(CareSimulation sim)
         {
             CloseRadial();
             ClosePhone();
+            SetPaused(false);
+            _outcomeBody.Clear();
+            _outcomeStars.Clear();
+            _outcomeButtons.Clear();
+            _outcomeActions.Clear();
             var stats = sim.CopyStats();
-            _outcomeTitle.text = sim.Outcome == Outcome.Survived ? "Morning! You made it through the day." : FailText(sim.FailReason);
-            _outcomeText.text =
-                $"Ended at {sim.ClockText}.\n" +
-                $"Crying {stats.cryingMinutes:0} min (longest {stats.longestCryMinutes:0}), average wellbeing {stats.AverageWellbeing:0}.\n" +
-                $"Feeds {stats.feeds}, diapers {stats.diaperChanges}, naps {stats.babyNaps}, your sleep {stats.parentSleepMinutes / 60:0.0} h, lowest energy {stats.minEnergy:0}.";
+            var result = game.LastResult ?? sim.Result;
+            var level = game.Level;
+            bool won = sim.Outcome == Outcome.Survived;
+
+            if (level != null) Text(_outcomeBody, "modal-kicker", $"Level {level.number}: {level.title}");
+            OutcomeTitle = won ? (level != null ? "Level complete!" : "Morning! You made it through the day.") : FailTitle(sim.FailReason);
+            Text(_outcomeBody, "modal-title", OutcomeTitle);
+
+            if (won && level != null)
+            {
+                var stars = Box(_outcomeBody, "stars");
+                for (int i = 1; i <= 3; i++)
+                {
+                    var star = new StarIcon(i <= result.Stars);
+                    stars.Add(star);
+                    _outcomeStars.Add(star);
+                }
+                foreach (var check in result.Checks) GoalRow(_outcomeBody, check.Text, check.Met);
+            }
+            else if (!won)
+            {
+                if (!string.IsNullOrEmpty(sim.FailText)) Text(_outcomeBody, "modal-text", sim.FailText);
+                Text(_outcomeBody, "modal-hint", "Tip: " + FailHint(sim.FailReason));
+                if (level != null && !string.IsNullOrEmpty(level.failHint) && sim.FailReason != FailReason.LevelRule)
+                    Text(_outcomeBody, "modal-hint", "Tip: " + level.failHint);
+                if (level != null) Text(_outcomeBody, "modal-note", "Your money and supplies are back to what you had at the start of the level.");
+            }
+
+            Text(_outcomeBody, "modal-note",
+                $"Ended at {sim.ClockText}. Crying {stats.cryingMinutes:0} min (longest {stats.longestCryMinutes:0}), average wellbeing {stats.AverageWellbeing:0}. " +
+                $"Feeds {stats.feeds}, diapers {stats.diaperChanges}, naps {stats.babyNaps}, your sleep {stats.parentSleepMinutes / 60:0.0} h, lowest energy {stats.minEnergy:0}.");
+
+            var row = Box(_outcomeBody, "row row--end");
+            if (level == null)
+            {
+                OutcomeButton(row, "Same day again", () => game.Restart(game.Seed));
+                OutcomeButton(row, "New day", () => game.Restart(System.Environment.TickCount));
+            }
+            else if (won)
+            {
+                OutcomeButton(row, "Level map", () => game.GoToMap());
+                OutcomeButton(row, "Play again", () => game.RetryLevel());
+                if (game.HasNextLevel) OutcomeButton(row, "Next level", () => game.NextLevel(), primary: true);
+            }
+            else
+            {
+                OutcomeButton(row, "Level map", () => game.GoToMap());
+                OutcomeButton(row, "Try again", () => game.RetryLevel(), primary: true);
+            }
             Show(_outcomeLayer);
         }
 
-        static string FailText(FailReason reason)
+        void OutcomeButton(VisualElement row, string text, System.Action onClick, bool primary = false)
+        {
+            var button = MakeButton(row, primary ? "modal-button modal-button--primary" : "modal-button", text, onClick);
+            _outcomeButtons.Add(button);
+            _outcomeActions.Add(onClick);
+        }
+
+        /// <summary>Presses a button of the success or failure screen by its text (tests).</summary>
+        public bool PressOutcome(string text)
+        {
+            int index = _outcomeButtons.FindIndex(b => b.text == text);
+            if (index < 0) return false;
+            _outcomeActions[index]();
+            return true;
+        }
+
+        /// <summary>Warm, never blaming (design Section 8.6).</summary>
+        static string FailTitle(FailReason reason)
         {
             switch (reason)
             {
-                case FailReason.ParentCollapsed: return "You collapsed from exhaustion. Grandma is on her way!";
-                case FailReason.ContinuousCrying: return "The baby cried for too long without a break.";
-                case FailReason.CryingBudget: return "Too much crying today.";
+                case FailReason.ParentCollapsed: return "You fell asleep on your feet! Grandma came over to take the next shift.";
+                case FailReason.ContinuousCrying: return "That was a long cry. Grandma came over to rock the baby.";
+                case FailReason.CryingBudget: return "A day of many tears. Grandma came over with a lullaby.";
+                case FailReason.ObjectiveMissed: return "Morning came before everything got done.";
+                case FailReason.LevelRule: return "Oops - not this time.";
                 default: return "The day is over.";
+            }
+        }
+
+        static string FailHint(FailReason reason)
+        {
+            switch (reason)
+            {
+                case FailReason.ParentCollapsed: return "sleep or rest whenever the baby sleeps, and eat when you're hungry. Energy drains twice as fast while the baby cries.";
+                case FailReason.ContinuousCrying: return "read the body language: hand to mouth = hungry, rubbing eyes = tired, squirming = diaper or gas. When unsure, hold and soothe.";
+                case FailReason.CryingBudget: return "act when a need icon turns into a triangle, before the crying starts.";
+                case FailReason.ObjectiveMissed: return "keep an eye on the goals in the top-left corner.";
+                default: return "try a different order of tasks.";
             }
         }
     }

@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f54de4c7bbe32144aa2714aed0283af, type: 3}
+  m_Name: Levels
+  m_EditorClassIdentifier: BabyChampion.Game::BabyChampion.Game.LevelsAsset
+  table:
+    chapters:
+    - number: 1
+      title: Newborn
+      firstLevel: 1
+      lastLevel: 3
+    - number: 2
+      title: Getting to Know You
+      firstLevel: 4
+      lastLevel: 6
+    - number: 3
+      title: Solids & Squirms
+      firstLevel: 7
+      lastLevel: 9
+    - number: 4
+      title: On the Move
+      firstLevel: 10
+      lastLevel: 13
+    - number: 5
+      title: Toddler
+      firstLevel: 14
+      lastLevel: 24
+    - number: 6
+      title: Big Kid
+      firstLevel: 25
+      lastLevel: 36
+    levels:
+    - number: 1
+      title: First Day Home
+      month: 0
+      objective: Feed, burp, change and settle the baby, and get through to tomorrow
+        morning.
+      briefing: Your first full day at home together. The baby will tell you what
+        they need - watch the need icons and the body language. Get through to 07:00
+        tomorrow without too much crying.
+      failHint: Feed the baby when the hunger icon turns into a triangle, before
+        the crying starts.
+      tutorial: 1
+      startHour: 7
+      lengthMinutes: 1440
+      cryingBudgetMinutes: 180
+      maxContinuousCryMinutes: 30
+      allowance: 0
+      helpCalls: 1
+      goals:
+      - type: 0
+        target: 1
+        text: Feed the baby
+      - type: 1
+        target: 1
+        text: Burp after a feed
+      - type: 2
+        target: 1
+        text: Change a diaper
+      - type: 3
+        target: 1
+        text: Put the baby to sleep
+      failConditions: []
+      actions: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d000000
+      stars:
+        twoStarWellbeing: 70
+        threeStarJoy: 60
+        helpStarCap: 2
+      start:
+        babyHunger: -1
+        babyTiredness: -1
+        parentEnergy: -1
+        parentHunger: -1
+        parentStress: -1
+        parentJoy: -1
+        babyAsleep: 0
+      signatureMoment: The baby grips your finger.
+    - number: 2
+      title: Night Shift
+      month: 1
+      objective: Night feeds every 2-3 hours. Sleep whenever the baby sleeps, and
+        reach 07:00 with Energy above 20.
+      briefing: 'It''s 21:00 and the baby is tired after a long day. Settle them
+        in the crib, then get some sleep yourself: time runs four times faster while
+        you sleep. The baby will wake you for feeds through the night.'
+      failHint: Go to bed as soon as the baby is asleep - every hour of sleep restores
+        Energy.
+      tutorial: 0
+      startHour: 21
+      lengthMinutes: 600
+      cryingBudgetMinutes: 60
+      maxContinuousCryMinutes: 30
+      allowance: 40
+      helpCalls: 1
+      goals:
+      - type: 0
+        target: 3
+        text: Night feeds
+      - type: 4
+        target: 20
+        text: Energy above 20 at 07:00
+      failConditions: []
+      actions: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d000000
+      stars:
+        twoStarWellbeing: 70
+        threeStarJoy: 60
+        helpStarCap: 2
+      start:
+        babyHunger: 15
+        babyTiredness: 65
+        parentEnergy: 40
+        parentHunger: 20
+        parentStress: 20
+        parentJoy: -1
+        babyAsleep: 0
+      signatureMoment: Asleep on your chest at 3 AM.

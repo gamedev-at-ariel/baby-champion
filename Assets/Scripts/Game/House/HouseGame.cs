@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BabyChampion.Simulation;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 namespace BabyChampion.Game
 {
@@ -36,10 +37,13 @@ namespace BabyChampion.Game
     }
 
     /// <summary>
-    /// The playable house (milestone M2): owns the simulated day and turns the player's taps into
+    /// The playable house: owns the simulated day or level and turns the player's taps into
     /// walking, carrying the baby and simulation commands. Every simulation action still goes
     /// through the parent-controller interface: the player is a <see cref="QueuedController"/>,
     /// and a command is queued when the parent arrives where the action happens.
+    /// Levels (M3): starts the level the menu asked for (<see cref="GameSession"/>), holds it at the
+    /// briefing until the player starts, and autosaves the result to the save slot when it ends.
+    /// Without a pending level it plays a free day (tests, the Editor).
     /// </summary>
     public sealed class HouseGame : MonoBehaviour
     {
@@ -58,6 +62,7 @@ namespace BabyChampion.Game
         [SerializeField] AgeRatesAsset ageRates;
         [SerializeField] PricesAsset prices;
         [SerializeField] TuningAsset tuning;
+        [SerializeField] LevelsAsset levels;
         [SerializeField] int month;
         [SerializeField] FeedingChoice feeding = FeedingChoice.Both;
         [SerializeField] ParentAvatar parent;
@@ -65,6 +70,7 @@ namespace BabyChampion.Game
         [SerializeField] Interactable startBabySpot;
         [SerializeField] Transform parentStart;
         [SerializeField] Interactable frontDoor;
+        [SerializeField] HelperAvatar helper;
 
         readonly List<Step> _plan = new List<Step>();
         bool _stepStarted;
@@ -72,6 +78,12 @@ namespace BabyChampion.Game
         string _lastRejection;
         int _lastDeliveryCount;
         float _timeScaleBeforePause = 1f;
+        LevelTable _builtInLevels;
+        Household _levelHousehold;
+        Household _endHousehold;
+        bool _ended;
+        bool _helpWasActive;
+        Interactable _crib;
 
         public CareSimulation Sim { get; private set; }
         public QueuedController Player { get; private set; }
@@ -96,6 +108,27 @@ namespace BabyChampion.Game
         /// <summary>Real time (unscaled) of the last delivery arrival, for the door indicator.</summary>
         public float LastDeliveryTime { get; private set; } = float.NegativeInfinity;
 
+        /// <summary>The level being played, or null on a free day.</summary>
+        public LevelDefinition Level { get; private set; }
+        public LevelTable Levels => levels != null ? levels.table : _builtInLevels ?? (_builtInLevels = LevelTable.CreateDefault());
+        /// <summary>The result once the day or level is over; null while it runs.</summary>
+        public LevelResult LastResult { get; private set; }
+        /// <summary>True while the briefing is shown: nothing moves until <see cref="BeginPlay"/>.</summary>
+        public bool WaitingToStart { get; private set; }
+        public string BabyName => GameSession.Slot?.babyName ?? "Baby";
+        public HelperAvatar Helper => helper;
+        /// <summary>The next level is built (and unlocked, when playing a save slot).</summary>
+        public bool HasNextLevel
+        {
+            get
+            {
+                if (Level == null || Levels.Find(Level.number + 1) == null) return false;
+                return GameSession.Slot == null || GameSession.Slot.IsUnlocked(Level.number + 1);
+            }
+        }
+
+        /// <summary>Raised once when the day or level ends, after the autosave.</summary>
+        public event Action<LevelResult> LevelEnded;
         /// <summary>Short messages for the player: refused actions, deliveries.</summary>
         public event Action<string> Notice;
         public event Action<RadialRequest> RadialRequested;
@@ -122,17 +155,95 @@ namespace BabyChampion.Game
         {
             Interactables = FindObjectsByType<Interactable>(FindObjectsSortMode.InstanceID);
             Rooms = FindObjectsByType<Room>(FindObjectsSortMode.InstanceID);
+            _crib = Array.Find(Interactables, i => i.babySpot && i.Offers(ActionType.PutBabyToSleep));
+            ApplyLook();
             var args = DevBootstrap.Args;
-            if (args.Level is int level) month = Mathf.Clamp(level - 1, 0, ConfigValidator.LastMonth);
+            int pending = GameSession.TakePendingLevel();
+            if (pending > 0 && Levels.Find(pending) != null)
+            {
+                StartLevel(pending, briefing: !args.SkipIntro, seed: args.Seed);
+                return;
+            }
+            if (args.Level is int level)
+            {
+                if (Levels.Find(level) != null)
+                {
+                    StartLevel(level, briefing: !args.SkipIntro, seed: args.Seed);
+                    return;
+                }
+                month = Mathf.Clamp(level - 1, 0, ConfigValidator.LastMonth);
+            }
             Restart(args.Seed ?? Environment.TickCount);
+        }
+
+        void ApplyLook()
+        {
+            var slot = GameSession.Slot;
+            if (slot == null) return;
+            feeding = slot.feeding;
+            if (baby != null) baby.SetLook(BabyLooks.Skin(slot.skinTone), BabyLooks.Outfit(slot.outfit));
         }
 
         // ---------------------------------------------------------------- day control
 
         /// <summary>A fresh copy of the simulation config from the data assets.</summary>
-        public SimConfig CreateConfig() => SimData.ToConfig(ageRates, prices, tuning);
+        public SimConfig CreateConfig() => SimData.ToConfig(ageRates, prices, tuning, levels);
 
-        public void Restart(int seed) => Begin(CareSimulation.NewDay(CreateConfig(), month, feeding, seed), seed);
+        /// <summary>A free day (no level rules).</summary>
+        public void Restart(int seed)
+        {
+            Level = null;
+            WaitingToStart = false;
+            Begin(CareSimulation.NewDay(CreateConfig(), month, feeding, seed), seed);
+        }
+
+        /// <summary>Starts a built level, with the save slot's money and supplies (or the Tuning start values).</summary>
+        public void StartLevel(int number, bool briefing = false, int? seed = null)
+        {
+            var level = Levels.Find(number) ?? throw new ArgumentException($"Level {number} is not built yet");
+            StartLevel(level, briefing, seed);
+        }
+
+        /// <summary>Starts a level from its definition (tests use modified copies).</summary>
+        public void StartLevel(LevelDefinition level, bool briefing = false, int? seed = null, Household household = null)
+        {
+            var slot = GameSession.Slot;
+            if (slot != null) feeding = slot.feeding;
+            month = level.month;
+            _levelHousehold = (household ?? slot?.household ?? Household.FromTuning(tuning != null ? tuning.tuning : new Tuning())).Copy();
+            int s = seed ?? Environment.TickCount;
+            Level = level;
+            WaitingToStart = briefing;
+            Begin(CareSimulation.StartLevel(CreateConfig(), level, feeding, s, _levelHousehold), s);
+            if (slot != null) Debug.Log($"[House] playing slot {GameSession.SlotIndex + 1} ({slot.babyName}), money {_levelHousehold.money}");
+        }
+
+        /// <summary>Plays the level again from its start: the same money and supplies as this attempt had (design Section 13.4).</summary>
+        public void RetryLevel()
+        {
+            if (Level == null) Restart(Environment.TickCount);
+            else StartLevel(Level, briefing: false, household: _levelHousehold);
+        }
+
+        /// <summary>Goes on to the next level, with the money and supplies the completed level ended with.</summary>
+        public void NextLevel()
+        {
+            if (!HasNextLevel) return;
+            var next = Levels.Find(Level.number + 1);
+            StartLevel(next, briefing: true, household: GameSession.Slot?.household ?? _endHousehold ?? _levelHousehold);
+        }
+
+        /// <summary>Ends the briefing: time starts running.</summary>
+        public void BeginPlay() => WaitingToStart = false;
+
+        /// <summary>Back to the menu's level map (the level's result is already saved).</summary>
+        public void GoToMap()
+        {
+            Paused = false;
+            Time.timeScale = 1f;
+            GameSession.ReturnToMap = true;
+            SceneManager.LoadScene(GameSession.MenuScene);
+        }
 
         public void Restart(int seed, int newMonth, FeedingChoice newFeeding)
         {
@@ -146,7 +257,10 @@ namespace BabyChampion.Game
         {
             month = state.month;
             feeding = state.feeding;
+            Level = state.level;
+            WaitingToStart = false;
             Begin(new CareSimulation(config ?? CreateConfig(), state), seed);
+            _levelHousehold = Sim.CopyHousehold();
         }
 
         void Begin(CareSimulation sim, int seed)
@@ -168,10 +282,15 @@ namespace BabyChampion.Game
             _lastRejection = null;
             _lastDeliveryCount = 0;
             LastDeliveryTime = float.NegativeInfinity;
+            _ended = false;
+            _helpWasActive = false;
+            _endHousehold = null;
+            LastResult = null;
+            if (helper != null) helper.Hide();
             BabyCarried = false;
             BabySpot = startBabySpot;
             if (parent != null && parentStart != null) parent.Teleport(parentStart.position, parentStart.eulerAngles.y);
-            Debug.Log($"[House] new day: month {month}, feeding {feeding}, seed {seed}");
+            Debug.Log($"[House] {(Level != null ? $"level {Level.number} ({Level.title})" : "free day")}: month {month}, feeding {feeding}, seed {seed}");
             DayStarted?.Invoke();
         }
 
@@ -179,7 +298,7 @@ namespace BabyChampion.Game
 
         void Update()
         {
-            if (Sim == null) return;
+            if (Sim == null || WaitingToStart) return;
             RunPlan();
             Sim.Advance(Time.deltaTime);
             AfterTick();
@@ -214,13 +333,65 @@ namespace BabyChampion.Game
             _lastDeliveryCount = deliveries;
 
             if (parent != null) parent.SetLowEnergy(p.Energy <= Sim.Config.tuning.lowEnergyThreshold);
+
+            if (Sim.HelpActive && !_helpWasActive) OnHelpArrived();
+            else if (!Sim.HelpActive && _helpWasActive && Sim.Outcome == Outcome.Running) Notice?.Invoke("Grandma went home");
+            _helpWasActive = Sim.HelpActive;
+
+            if (Sim.Outcome != Outcome.Running && !_ended) EndLevel();
+        }
+
+        void OnHelpArrived()
+        {
+            CancelPlan();
+            if (BabyCarried)
+            {
+                BabyCarried = false;
+                BabySpot = NearestBabySpot() ?? startBabySpot;
+            }
+            Notice?.Invoke($"Grandma is here: she looks after {BabyName} until {CareSimulation.FormatClock(Sim.HelpUntilMinute, Sim.StartHour)}. Rest while you can!");
+        }
+
+        void EndLevel()
+        {
+            _ended = true;
+            CancelPlan();
+            LastResult = Sim.Result;
+            if (LastResult.Completed) _endHousehold = Sim.CopyHousehold();
+            if (Level != null && GameSession.Slot != null)
+            {
+                GameSession.Slot.RecordResult(LastResult, Sim.CopyHousehold());
+                GameSession.Save();
+            }
+            Debug.Log($"[House] {(Level != null ? "level " + Level.number : "free day")} ended: {Sim.Outcome}"
+                      + $"{(Sim.FailReason != FailReason.None ? " (" + Sim.FailReason + ")" : "")}, {LastResult.Stars} star(s)");
+            LevelEnded?.Invoke(LastResult);
         }
 
         void LateUpdate()
         {
             if (Sim == null) return;
             ShowParent();
+            ShowHelper();
             ShowBaby();
+        }
+
+        /// <summary>Grandma stands by the baby while she helps, and puts a sleeping baby in the crib.</summary>
+        void ShowHelper()
+        {
+            if (helper == null) return;
+            if (!Sim.HelpActive)
+            {
+                helper.Hide();
+                return;
+            }
+            bool settling = Sim.Baby.Asleep || (Sim.HelperBusy && Sim.HelperAction == ActionType.PutBabyToSleep);
+            if (settling && !BabyCarried && _crib != null) BabySpot = _crib;
+            var spot = BabySpot != null ? BabySpot : startBabySpot;
+            if (spot == null) return;
+            var look = spot.babyPoint != null ? spot.babyPoint.position : spot.transform.position;
+            var side = Vector3.Cross(Vector3.up, look - spot.StandPosition).normalized;
+            helper.Show(spot.StandPosition + side * 0.8f, look, Sim.HelperBusy);
         }
 
         void ShowParent()
@@ -379,6 +550,10 @@ namespace BabyChampion.Game
         {
             if (Sim == null) return ActionCheck.No("No day running");
             if (Sim.Outcome != Outcome.Running) return ActionCheck.No("The day is over");
+            bool withBaby = action.Verb != HouseVerb.Sim || (action.Command.type != ActionType.Stop
+                && action.Command.type != ActionType.OrderSupplies && action.Command.type != ActionType.CallForHelp
+                && ActionCatalog.For(action.Command.type).NeedsBaby);
+            if (Sim.HelpActive && withBaby) return ActionCheck.No("Grandma is looking after the baby");
             switch (action.Verb)
             {
                 case HouseVerb.PickUpBaby:
@@ -390,7 +565,7 @@ namespace BabyChampion.Game
             }
 
             var type = action.Command.type;
-            if (type != ActionType.Stop && type != ActionType.OrderSupplies)
+            if (type != ActionType.Stop && type != ActionType.OrderSupplies && type != ActionType.CallForHelp)
             {
                 var info = ActionCatalog.For(type);
                 if (info.HandsFree && BabyCarried) return ActionCheck.No("Put the baby down first");
@@ -435,7 +610,7 @@ namespace BabyChampion.Game
                 default:
                 {
                     var type = action.Command.type;
-                    if (type == ActionType.Stop || type == ActionType.OrderSupplies)
+                    if (type == ActionType.Stop || type == ActionType.OrderSupplies || type == ActionType.CallForHelp)
                     {
                         if (type == ActionType.Stop) CancelPlan();
                         Player.Enqueue(action.Command);
