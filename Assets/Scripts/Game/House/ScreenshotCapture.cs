@@ -115,9 +115,11 @@ namespace BabyChampion.Game
             Done = true;
         }
 
+        // Plain frames, not WaitForEndOfFrame: that never resumes in batch mode (no Game view renders).
+        // The camera and the panel render into their textures during each frame either way.
         static IEnumerator Settle()
         {
-            for (int i = 0; i < 3; i++) yield return new WaitForEndOfFrame();
+            for (int i = 0; i < 3; i++) yield return null;
         }
 
         void Save(RenderTexture world, RenderTexture ui, string path)
